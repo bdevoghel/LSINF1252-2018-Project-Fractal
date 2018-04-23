@@ -1,7 +1,7 @@
 # fractal_deVillenfagne_deVoghel
 Code developed for the fractal project of the LSINF1252 course at the EPL
 
-Academic year 2017-18
+Academic year 2017-2018
 
 
 
