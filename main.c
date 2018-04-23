@@ -132,6 +132,8 @@ void *file_reader(void *file_to_read)
     char *filename = (char *)file_to_read;
 
     // TODO
+
+    return NULL;
 }
 
 /**
@@ -142,6 +144,8 @@ void *fractal_calculator()
 {
     // TODO
     // créer dans fractal.c et fractal.h la fonction fractal_compute
+
+    return NULL;
 }
 
 /* SOUS_FONCTIONS D'AIDE */

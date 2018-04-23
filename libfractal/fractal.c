@@ -13,6 +13,9 @@ struct fractal *fractal_new(const char *name, int width, int height, double a, d
     // assigner le nom
     new_frac->name = (char *) malloc(sizeof(char) * 64); // alloue l'espace nécessaire pour le nom, pas plus que 64 caractères
     if(new_frac->name == NULL) { // allocation échouée
+        // libère ce qui a déjà été alloué
+        free(new_fract);
+
         return NULL; // retourne NULL si erreur
     }
     int i;
@@ -29,12 +32,15 @@ struct fractal *fractal_new(const char *name, int width, int height, double a, d
 
     new_frac->values = (int *) calloc(sizeof(int) *  width * height); // alloue l'espace nécessaire pour les valeurs des pixels et l'initialise à 0
     if(new_frac->values == NULL) { // allocation échouée
+        // libère ce qui a déjà été alloué
         free(new_fract->name);
         free(new_fract);
+
         return NULL; // retourne NULL si erreur
     }
 
     new_frac->total_value = 0;
+    new_frac->average = 0;
 
     return new_frac;
 }
@@ -55,13 +61,18 @@ const char *fractal_get_name(const struct fractal *f)
 
 int fractal_get_value(const struct fractal *f, int x, int y)
 {
-    //TODO vérifier valeurs de x et y en fct de width et height
+    if(x >= 0 && x < f->width && y >= 0 && y < f->height) {
+        return -1; // retourne -1 si erreur : (x,y) en dehors de l'image
+    }
     return f->values[x + (y * f->width)];
 }
 
 void fractal_set_value(struct fractal *f, int x, int y, int val)
 {
-    //TODO vérifier valeurs de x et y en fct de width et height
+    if(x >= 0 && x < f->width && y >= 0 && y < f->height) {
+        // TODO : msg d'erreur // affiche message d'erreur : (x,y) en dehors de l'image
+    }
+
     // actualise la valeur totale de la fractale en fonction de ce qu'il y avait avant en (x,y)
     f->total_value += (val - f->values[x + (y * f->width)]);
 
@@ -72,6 +83,16 @@ void fractal_set_value(struct fractal *f, int x, int y, int val)
 int fractal_get_total_value(const struct fractal *f)
 {
     return f->total_value;
+}
+
+int fractal_get_average(const struct fractal *f)
+{
+    return f->average
+}
+
+void fractal_compute_average(const struct fractal *f)
+{
+    f->average = f->total_value / (f->width * f->height);
 }
 
 int fractal_get_width(const struct fractal *f)
