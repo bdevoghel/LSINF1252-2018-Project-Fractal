@@ -1,6 +1,7 @@
 #ifndef _STACK_H
 #define _STACK_H
 
+#include <stdlib.h>
 #include "../libfractal/fractal.h"
 
 /// Interface représentant une pile (un stack) stockant des pointeurs de fractales
@@ -10,8 +11,8 @@
  * structure d'une node, élément d'une pile
  */
 typedef struct node {
-    fractal_t *fract; // pointeur de fractale
-    node_t *next; // prochain élément du stack
+    struct fractal *fract; // pointeur de fractale
+    struct node *next; // prochain élément du stack
 } node_t;
 
 /*
@@ -20,7 +21,7 @@ typedef struct node {
  * @stack: une pile
  * @return: taille de la pile
  */
-size_t stack_length(node_t *stack);
+int stack_length(struct node *stack);
 
 /*
  * stack_push: ajoute une fractale sur une pile
@@ -29,7 +30,7 @@ size_t stack_length(node_t *stack);
  * @value: fractale à mettre sur la pile
  * @return: 0 si pas d'erreur, 1 sinon
  */
-int stack_push(node_t **stack, fractal_t *fract);
+int stack_push(struct node **stack, struct fractal *fract);
 
 /*
  * stack_pop: récupère la dernière fractale de une pile
@@ -37,13 +38,13 @@ int stack_push(node_t **stack, fractal_t *fract);
  * @stack: une pile
  * @return: la dernière fractale mise sur la pile, NULL si pile vide
  */
-fractal_t *stack_pop(node_t **stack);
+struct fractal *stack_pop(struct node **stack);
 
 /*
  * stack_free: libère tous les éléments de la pile
  *
  * @stack: une pile
  */
-void stack_free(node_t *stack);
+void stack_free(struct node *stack);
 
 #endif

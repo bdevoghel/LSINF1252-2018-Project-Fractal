@@ -28,7 +28,7 @@ int stack_push(node_t **stack, fractal_t *fract)
     return 0; // réussite
 }
 
-fractal_t *stack_pop(node_t **stack)
+struct fractal *stack_pop(node_t **stack)
 {
     node_t *head = *stack;
     fractal_t *head_value = head->fract; // extraire le pointeur de la fractale de la tête de la pile

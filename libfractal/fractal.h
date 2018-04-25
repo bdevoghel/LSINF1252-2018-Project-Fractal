@@ -12,7 +12,7 @@ typedef struct fractal {
     int height; // hauteur de l'image à calculer
     int *values; // vecteur 1D contenant les valeurs des pixels de l'image 2D de la fractale
     int total_value; // valeur additionnée de tous les pixels
-    int average; // valeur moyenne de tous les pixels
+    double average; // valeur moyenne de tous les pixels
 } fractal_t;
 
 /*
@@ -76,14 +76,14 @@ int fractal_get_total_value(const struct fractal *f);
  * @f: fractale
  * @return: valeur moyenne de l'image de la fractale
  */
-int fractal_get_average(const struct fractal *f);
+double fractal_get_average(const struct fractal *f);
 
 /*
  * fractal_compute_average: calcule la valeur moyenne de l'image
  *
  * @f: fractale
  */
-void fractal_compute_average(const struct fractal *f);
+void fractal_compute_average(struct fractal *f);
 
 /*
  * fractal_get_width: retourne la largeur de l'image de la fractale
@@ -95,7 +95,7 @@ int fractal_get_width(const struct fractal *f);
 
 /*
  * fractal_get_height: retourne la hauteur de l'image de la fractale
- * 
+ *
  * @f: fractale
  * @return: hauteur
  */
@@ -103,7 +103,7 @@ int fractal_get_height(const struct fractal *f);
 
 /*
  * fractal_get_a: retourne la partie réelle des coordonnées de la fractale
- * 
+ *
  * @f: fractale
  * @return: partie réelle
  */

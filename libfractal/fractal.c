@@ -14,7 +14,7 @@ struct fractal *fractal_new(const char *name, int width, int height, double a, d
     new_frac->name = (char *) malloc(sizeof(char) * 64); // alloue l'espace nécessaire pour le nom, pas plus que 64 caractères
     if(new_frac->name == NULL) { // allocation échouée
         // libère ce qui a déjà été alloué
-        free(new_fract);
+        free(new_frac);
 
         return NULL; // retourne NULL si erreur
     }
@@ -30,11 +30,11 @@ struct fractal *fractal_new(const char *name, int width, int height, double a, d
     new_frac->width = width;
     new_frac->height = height;
 
-    new_frac->values = (int *) calloc(sizeof(int) *  width * height); // alloue l'espace nécessaire pour les valeurs des pixels et l'initialise à 0
+    new_frac->values = (int *) calloc(width * height, sizeof(int)); // alloue l'espace nécessaire pour les valeurs des pixels et l'initialise à 0
     if(new_frac->values == NULL) { // allocation échouée
         // libère ce qui a déjà été alloué
-        free(new_fract->name);
-        free(new_fract);
+        free(new_frac->name);
+        free(new_frac);
 
         return NULL; // retourne NULL si erreur
     }
@@ -85,12 +85,12 @@ int fractal_get_total_value(const struct fractal *f)
     return f->total_value;
 }
 
-int fractal_get_average(const struct fractal *f)
+double fractal_get_average(const struct fractal *f)
 {
-    return f->average
+    return f->average;
 }
 
-void fractal_compute_average(const struct fractal *f)
+void fractal_compute_average(struct fractal *f)
 {
     f->average = f->total_value / (f->width * f->height);
 }

@@ -7,6 +7,7 @@ OBJ=$(SRC:.c=.o)
 LIBFILE=libfractal.a
 
 all: $(SRC) $(LIBFILE)
+	@echo 'Making libfractal'
 
 $(LIBFILE): $(OBJ)
 	$(AR) r $@ $(OBJ)
