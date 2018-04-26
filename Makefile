@@ -24,4 +24,3 @@ main.o: main.c
 clean:
 	@echo 'Removing files'
 	@rm -rf fractal *.o libfractal/*.o libfractal/*.a *.bmp libstack/*.o libstack/*.a
- 

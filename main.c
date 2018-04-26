@@ -60,24 +60,30 @@ int main(int argc, const char *argv[])
     if(argc < 3) { // nécessite au moins 3 arguments (nom de fonction, fichier d'entrée, fichier de sortie / option "-d")
         printf("Ma té fou twa !? Fo apelé dé argumen h1 ! Au mo1 trwa !\n"); // imprime le problème à la stderr TODO : message d'erreur "Il n'y a pas assez d'arguments donnés, vous devez au moins donner un fichier contenant les fractales et un fichier de sortie!\n"
         exit(EXIT_FAILURE);
-
     } else {
         files_to_read = process_options(argc, argv); // traitement des arguments et options, récupère le nombre de fichiers à lire
     }
 
     // initialisation des mutex et semaphores des buffers
     int slots_in_buffer = ceil(maxthreads * mt_multiplier);
-    initialise_buffer_protection(&toCompute_mutex, &toCompute_empty, &toCompute_full, slots_in_buffer); // pour toCompute_buffer
-    initialise_buffer_protection(&computed_mutex,  &computed_empty,  &computed_full,  slots_in_buffer); // pour computed_buffer
+    if(initialise_buffer_protection(&toCompute_mutex, &toCompute_empty, &toCompute_full, slots_in_buffer)) { // pour toCompute_buffer
+        // TODO traitement d'eerreure
+    }
+    if(initialise_buffer_protection(&computed_mutex,  &computed_empty,  &computed_full,  slots_in_buffer)) { // pour computed_buffer
+        // TODO traitement d'eerreure
+    }
 
     // lancement des thread de lecture, un thraed par fichier à lire
     reader_threads[files_to_read]; // threads de lecture
     int j = 0; // emplacement dans [reader_threads]
     for(int i = 1 ; i<argc ; i++) { // parcourt tous les arguments
         if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d") || (!d_option && i == argc-1)) { // paramètre ou fichier de sortie finale
+            if(!strcmp(argv[i], "--maxthreads")) {
+                i++; // passer argument de l'option maxthread
+            }
             // ne rien faire
         } else { // fichier à lire
-	    char *file_name;
+	        char *file_name;
             if(!strcmp(argv[i], "-")) { // nom du fichier à lire est l'entrée std
                 // *file_name = "0";//TODO : lecture de l'entrée std
             } else { // nom du fichier à lire est un fichier normal
@@ -90,7 +96,7 @@ int main(int argc, const char *argv[])
             }
             j++; // passer à l'emplacement suivant dans le vecteur de threads
         }
-    }
+    } // threads de lecture lancés et stockés dans [reader_threads]
 
     // lancement des threads de calcul
     calculating_threads[maxthreads]; // threads de calcul
@@ -100,7 +106,7 @@ int main(int argc, const char *argv[])
         if(pthread_create(&new_thread, NULL, fractal_calculator(), NULL)) { // initialisation du thread de calcul
             //TODO : traitement d'erreur à la création du thread
         }
-    }
+    } // threads de calcul lancés et stockés dans [calculating_threads]
 
 
     // TODO : créer le(s) thread de sortie
@@ -114,6 +120,8 @@ int main(int argc, const char *argv[])
     }
     all_files_read = 1;
 
+    // TODO pthread_join sur threads de calcul
+
 
     // TODO comment détecter que toutes les fractes ont été calculées et que les threads de calcul ont fini leur boulot ?
 
@@ -121,7 +129,7 @@ int main(int argc, const char *argv[])
     stack_free(&toCompute_buffer);
     stack_free(&computed_buffer);
 
-    return 0;
+    return 0; // succesfull
 }
 
 /**
@@ -171,6 +179,8 @@ int process_options(int argc, char *argv)
         }
     }
 
+    //TODO error handeling sur arguments (pas bon nombre ....)
+
     // copie du nom du fichier de sortie dans la variable file_out
     strcpy(file_out, argv[argc-1]);
 
@@ -196,8 +206,9 @@ int process_options(int argc, char *argv)
  * @empty : sémaphore comptant le nombre de places libres dans le buffer
  * @full : sémaphore comptant le nombre de places occupées dans le buffer
  * @slots_in_buffer : nomre de places à prévoir dans le buffer
+ * @return : 0 si tout correctement initialisé, 1 si erreur
  */
-void initialise_buffer_protection(pthread_mutex_t *mutex, sem_t *empty, sem_t *full, int slots_in_buffer)
+int initialise_buffer_protection(pthread_mutex_t *mutex, sem_t *empty, sem_t *full, int slots_in_buffer)
 {
     if(pthread_mutex_init(mutex, NULL) != 0) { // initialisation du mutex
         //error TODO : traitement d'erreur
