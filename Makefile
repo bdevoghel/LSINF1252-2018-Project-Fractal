@@ -1,6 +1,8 @@
+# https://gl.developpez.com/tutoriel/outil/makefile/
+
 CC = gcc
 AR=ar
-CFLAGS = -g -Wall -W -I$(HOME)/local/include -std=c99
+CFLAGS = -g -Wall -W
 LDFLAGS = -lm -L/usr/local/lib -lSDL -lpthread
 LIBRAIRIES = libfractal/libfractal.a libstack/libstack.a
 all: main
