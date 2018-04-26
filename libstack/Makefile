@@ -7,7 +7,6 @@ OBJ=$(SRC:.c=.o)
 LIBFILE=libstack.a
 
 all: $(SRC) $(LIBFILE)
-	@echo 'Making libstack'
 
 $(LIBFILE): $(OBJ)
 	$(AR) r $@ $(OBJ)
