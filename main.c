@@ -29,21 +29,27 @@ char file_out[64]; // nom du fichier de sortie finale
 
 pthread_t reader_threads[]; // threads de lecture des fichiers
 pthread_t calculating_threads[]; // threads de calcul
+pthread_t printing_thread; // thread de sortie des fractales
 
 // variables modifiables
 int mt_multiplier = 2; // facteur du nombre de slots dans un buffer (= mt_multiplier * maxthreads)
 
-// creation et protection du premier buffer
+// creation des protections du premier buffer
 node_t toCompute_buffer;
 pthread_mutex_t toCompute_mutex;
 sem_t toCompute_empty;
 sem_t toCompute_full;
+int toCompute_state; // 0 si encore utilisé, 1 si plus utilisé
 
-// creation et protection du deuxième buffer
+// creation des protections du deuxième buffer
 node_t computed_buffer;
 pthread_mutex_t computed_mutex;
 sem_t computed_empty;
 sem_t computed_full;
+int computed_state; // 0 si encore utilisé, 1 si plus utilisé
+
+// protection des états des buffers
+pthread_mutex_t buffer_states;
 
 // variables de fin de programme
 int all_files_read = 0;
@@ -66,6 +72,9 @@ int main(int argc, const char *argv[])
 
     // initialisation des mutex et semaphores des buffers
     int slots_in_buffer = ceil(maxthreads * mt_multiplier);
+    if(pthread_mutex_init(buffer_states, NULL) != 0) { // initialisation du mutex sur les états des buffers
+        //error TODO : traitement d'erreur
+    }
     if(initialise_buffer_protection(&toCompute_mutex, &toCompute_empty, &toCompute_full, slots_in_buffer)) { // pour toCompute_buffer
         // TODO traitement d'eerreure
     }
@@ -91,7 +100,7 @@ int main(int argc, const char *argv[])
             }
             pthread_t new_thread; // création d'un nouveau thread
             reader_threads[j] = new_thread; // thread mis dans le vecteur des lecteurs
-            if(pthread_create(&new_thread, NULL, file_reader(), (void *) file_name)) { // initialisation du thread lecteur de fichier
+            if(pthread_create(&new_thread, NULL, file_reader, (void *) file_name)) { // initialisation du thread lecteur de fichier
                 //TODO : traitement d'erreur à la création du thread
             }
             j++; // passer à l'emplacement suivant dans le vecteur de threads
@@ -103,16 +112,16 @@ int main(int argc, const char *argv[])
     for(int j = 0 ; j < maxthreads ; j++) {
         pthread_t new_thread; // création d'un nouveau thread de calcul
         calculating_threads[j] = new_thread; // thread mis dans le vecteur des calculateurs
-        if(pthread_create(&new_thread, NULL, fractal_calculator(), NULL)) { // initialisation du thread de calcul
+        if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             //TODO : traitement d'erreur à la création du thread
         }
     } // threads de calcul lancés et stockés dans [calculating_threads]
 
 
-    // TODO : créer le(s) thread de sortie
-
-    // TODO : récupérer la plus grande fractale
-
+    // lancement du thread de sortie
+    if(pthread_create(&printing_thread, NULL, fractal_printer, NULL)) { // initialisation du thread de sortie
+        //TODO : traitement d'erreur à la création du thread
+    }
 
     // attendre que tous les threads de lecture ont fini de lire tous les fichiers
     for(int i = 0 ; i < files_to_read ; i++) {
@@ -120,11 +129,20 @@ int main(int argc, const char *argv[])
     }
     all_files_read = 1;
 
-    // TODO pthread_join sur threads de calcul
 
+    // TODO PAS BON POUR LE BUFFER
+    // attendre que [toCompute_buffer] soit vidé
+    while(stack_length(&toCompute_buffer) != 0);
+    pthread_mutex_lock(&buffer_state);
+    toCompute_state = 1;
+    pthread_mutex_unlock(&buffer_state);
+
+
+    // TODO pthread_join sur threads de calcul
 
     // TODO comment détecter que toutes les fractes ont été calculées et que les threads de calcul ont fini leur boulot ?
 
+    // TODO : récupérer la plus grande fractale
 
     stack_free(&toCompute_buffer);
     stack_free(&computed_buffer);
@@ -136,11 +154,13 @@ int main(int argc, const char *argv[])
  * TODO
  * producteur pour toCompute_buffer, lis dans un fichier dont le nom est donné en argument
  */
-void file_reader(void *file_name)
+void *file_reader(void *file_name)
 {
     // TODO delete ? : char *filename = (char *)file_to_read;
 
     // TODO
+
+    // TODO compter le nombre de fractles crées
 
     return NULL;
 }
@@ -149,10 +169,20 @@ void file_reader(void *file_name)
  * TODO
  * consommateur de toCompute_buffer, producteur de computed_buffer, calcule les pixels des fractales
  */
-void fractal_calculator(void *arg) //TODO déterminer arg
+void *fractal_calculator(void *arg) //TODO déterminer arg
 {
     // TODO
     // créer dans fractal.c et fractal.h la fonction fractal_compute
+
+    return NULL;
+}
+
+/**
+ * TODO
+ */
+void *fractal_printer(void *arg) //TODO déterminer arg
+{
+    // TODO
 
     return NULL;
 }
