@@ -9,7 +9,7 @@ LIBFILE=libfractal.a
 all: $(SRC) $(LIBFILE)
 
 $(LIBFILE): $(OBJ)
-	$(AR) r $@ $(OBJ)
+	@$(AR) r $@ $(OBJ)
 
 *.o:
-	$(CC) -o $@ -c $< $(CFLAGS)
+	@$(CC) -o $@ -c $< $(CFLAGS)

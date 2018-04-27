@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <math.h>
 
+#include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -27,22 +28,18 @@ int maxthreads = 1; // nombre de threads de calcul maximal, 1 par défault (vale
 int files_to_read; // nombre de fichiers à lire pour extraire les infos des fractales
 char file_out[64]; // nom du fichier de sortie finale
 
-pthread_t reader_threads[]; // threads de lecture des fichiers
-pthread_t calculating_threads[]; // threads de calcul
-pthread_t printing_thread; // thread de sortie des fractales
-
 // variables modifiables
 int mt_multiplier = 2; // facteur du nombre de slots dans un buffer (= mt_multiplier * maxthreads)
 
 // creation des protections du premier buffer
-node_t toCompute_buffer;
+node_t *toCompute_buffer;
 pthread_mutex_t toCompute_mutex;
 sem_t toCompute_empty;
 sem_t toCompute_full;
 int toCompute_state; // 0 si encore utilisé, 1 si plus utilisé
 
 // creation des protections du deuxième buffer
-node_t computed_buffer;
+node_t *computed_buffer;
 pthread_mutex_t computed_mutex;
 sem_t computed_empty;
 sem_t computed_full;
@@ -53,6 +50,16 @@ pthread_mutex_t buffer_states;
 
 // variables de fin de programme
 int all_files_read = 0;
+int all_fractals_calculated = 0;
+int all_fractals_printed = 0;
+
+/* DECLARATION DES FONCTIONS UTILISÉES */
+
+void *file_reader();
+void *fractal_calculator();
+void *fractal_printer();
+int process_options();
+int initialise_buffer_protection();
 
 
 /* FONCTIONS PRINCIPALES */
@@ -63,8 +70,8 @@ int all_files_read = 0;
 int main(int argc, const char *argv[])
 {
     // lecture des arguments
-    if(argc < 3) { // nécessite au moins 3 arguments (nom de fonction, fichier d'entrée, fichier de sortie / option "-d")
-        printf("Ma té fou twa !? Fo apelé dé argumen h1 ! Au mo1 trwa !\n"); // imprime le problème à la stderr TODO : message d'erreur "Il n'y a pas assez d'arguments donnés, vous devez au moins donner un fichier contenant les fractales et un fichier de sortie!\n"
+    if(argc < 3) { // nécessite au moins 3 arguments (nom de fonction, fichier d'entrée, fichier de sortie)
+        fprintf(stderr, "Not enough arguments : at least 3 arguments needed in order to calculate fractals (function name, entry file, out file)\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     } else {
         files_to_read = process_options(argc, argv); // traitement des arguments et options, récupère le nombre de fichiers à lire
@@ -72,18 +79,18 @@ int main(int argc, const char *argv[])
 
     // initialisation des mutex et semaphores des buffers
     int slots_in_buffer = ceil(maxthreads * mt_multiplier);
-    if(pthread_mutex_init(buffer_states, NULL) != 0) { // initialisation du mutex sur les états des buffers
-        //error TODO : traitement d'erreur
+    if(pthread_mutex_init(&buffer_states, NULL) != 0) { // initialisation du mutex sur les états des buffers
+        // TODO : traitement d'erreur
     }
     if(initialise_buffer_protection(&toCompute_mutex, &toCompute_empty, &toCompute_full, slots_in_buffer)) { // pour toCompute_buffer
-        // TODO traitement d'eerreure
+        // TODO traitement d'erreur
     }
     if(initialise_buffer_protection(&computed_mutex,  &computed_empty,  &computed_full,  slots_in_buffer)) { // pour computed_buffer
-        // TODO traitement d'eerreure
+        // TODO traitement d'erreur
     }
 
     // lancement des thread de lecture, un thraed par fichier à lire
-    reader_threads[files_to_read]; // threads de lecture
+    pthread_t *reader_threads[files_to_read]; // threads de lecture de fichiers
     int j = 0; // emplacement dans [reader_threads]
     for(int i = 1 ; i<argc ; i++) { // parcourt tous les arguments
         if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d") || (!d_option && i == argc-1)) { // paramètre ou fichier de sortie finale
@@ -92,14 +99,14 @@ int main(int argc, const char *argv[])
             }
             // ne rien faire
         } else { // fichier à lire
-	        char *file_name;
+	        char file_name[64];
             if(!strcmp(argv[i], "-")) { // nom du fichier à lire est l'entrée std
                 // *file_name = "0";//TODO : lecture de l'entrée std
             } else { // nom du fichier à lire est un fichier normal
-                file_name = argv[i];
+                strcpy(file_name, argv[i]);
             }
             pthread_t new_thread; // création d'un nouveau thread
-            reader_threads[j] = new_thread; // thread mis dans le vecteur des lecteurs
+            reader_threads[j] = &new_thread; // thread mis dans le vecteur des lecteurs
             if(pthread_create(&new_thread, NULL, file_reader, (void *) file_name)) { // initialisation du thread lecteur de fichier
                 //TODO : traitement d'erreur à la création du thread
             }
@@ -108,10 +115,10 @@ int main(int argc, const char *argv[])
     } // threads de lecture lancés et stockés dans [reader_threads]
 
     // lancement des threads de calcul
-    calculating_threads[maxthreads]; // threads de calcul
+    pthread_t *calculating_threads[maxthreads]; // threads de calcul
     for(int j = 0 ; j < maxthreads ; j++) {
         pthread_t new_thread; // création d'un nouveau thread de calcul
-        calculating_threads[j] = new_thread; // thread mis dans le vecteur des calculateurs
+        calculating_threads[j] = &new_thread; // thread mis dans le vecteur des calculateurs
         if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             //TODO : traitement d'erreur à la création du thread
         }
@@ -119,36 +126,48 @@ int main(int argc, const char *argv[])
 
 
     // lancement du thread de sortie
+    pthread_t printing_thread; // thread de sortie des fractales
     if(pthread_create(&printing_thread, NULL, fractal_printer, NULL)) { // initialisation du thread de sortie
         //TODO : traitement d'erreur à la création du thread
     }
 
-    // attendre que tous les threads de lecture ont fini de lire tous les fichiers
+    // attendre que tous les threads de lecture aient fini de lire tous les fichiers
     for(int i = 0 ; i < files_to_read ; i++) {
-        pthread_join(reader_threads[i], NULL);
+        pthread_join(*reader_threads[i], NULL);
     }
     all_files_read = 1;
 
-
-    // TODO PAS BON POUR LE BUFFER
     // attendre que [toCompute_buffer] soit vidé
-    while(stack_length(&toCompute_buffer) != 0);
-    pthread_mutex_lock(&buffer_state);
-    toCompute_state = 1;
-    pthread_mutex_unlock(&buffer_state);
+    while(stack_length(toCompute_buffer) != 0);
+    pthread_mutex_lock(&buffer_states);
+    toCompute_state = 1; // toCopmute_buffer a fini d'être utilisé
+    pthread_mutex_unlock(&buffer_states);
 
+    // attendre que tous les threads de calcul aient fini de calculer toutes les fractales
+    for(int i = 0 ; i < maxthreads ; i++) {
+        pthread_join(*calculating_threads[i], NULL);
+    }
+    all_fractals_calculated = 1;
 
-    // TODO pthread_join sur threads de calcul
+    // attendre que [computed_buffer] soit vidé
+    while(stack_length(computed_buffer) != 0);
+    pthread_mutex_lock(&buffer_states);
+    computed_state = 1; // copmuted_buffer a fini d'être utilisé
+    pthread_mutex_unlock(&buffer_states);
 
-    // TODO comment détecter que toutes les fractes ont été calculées et que les threads de calcul ont fini leur boulot ?
+    // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
+    pthread_join(printing_thread, NULL);
+    all_fractals_printed = 1;
+
+printf("ARRIVED HERE !!\n");
 
     // TODO : récupérer la plus grande fractale
 
-    stack_free(&toCompute_buffer);
-    stack_free(&computed_buffer);
+    //stack_free(&toCompute_buffer);
+    //stack_free(&computed_buffer);
 
-    return 0; // succesfull
-}
+    exit(EXIT_SUCCESS);
+} // end main()
 
 /**
  * TODO
@@ -156,6 +175,7 @@ int main(int argc, const char *argv[])
  */
 void *file_reader(void *file_name)
 {
+    printf("IN FUNCTION file_reader() with parameter %s\n", (char*) file_name);
     // TODO delete ? : char *filename = (char *)file_to_read;
 
     // TODO
@@ -171,6 +191,7 @@ void *file_reader(void *file_name)
  */
 void *fractal_calculator(void *arg) //TODO déterminer arg
 {
+    printf("IN FUNCTION fractal_calculator() with parameter %s\n", (char*) arg);
     // TODO
     // créer dans fractal.c et fractal.h la fonction fractal_compute
 
@@ -182,6 +203,7 @@ void *fractal_calculator(void *arg) //TODO déterminer arg
  */
 void *fractal_printer(void *arg) //TODO déterminer arg
 {
+    printf("IN FUNCTION fractal_printer() with parameter %s\n", (char*) arg);
     // TODO
 
     return NULL;
@@ -197,7 +219,7 @@ void *fractal_printer(void *arg) //TODO déterminer arg
  * @argv : vecteurs des arguments (strings) reçus avec la main
  * @return: nombre de fichiers à lire
  */
-int process_options(int argc, char *argv)
+int process_options(int argc, char *argv[])
 {
     for(int i = 1 ; i<argc ; i++) { // parcourt tous les arguments
         if(!strcmp(argv[i], "--maxthreads")) { // paramètre du nombre de threads de calcul
@@ -221,7 +243,11 @@ int process_options(int argc, char *argv)
         printf("Option -d pas présente : une image de la fractale ayant la plus haute moyenne sera générée dans le fichier %s\n", file_out);
     }
     if(mt_option) {
-        printf("Option --maxthreads présente : %i threads de calcul seront utlisés\n", maxthreads);
+        if(maxthreads == 1) {
+            printf("Option --maxthreads présente : %i thread de calcul sera utlisé\n", maxthreads);
+        } else {
+            printf("Option --maxthreads présente : %i threads de calcul seront utlisés\n", maxthreads);
+        }
     } else {
         printf("Option --maxthreads pas présente : le nombre par défault de %i thread de calcul sera utlisé\n", maxthreads);
     }
@@ -249,4 +275,6 @@ int initialise_buffer_protection(pthread_mutex_t *mutex, sem_t *empty, sem_t *fu
     if(sem_init(full, 0 , 0) != 0) { // full compte le nombre de slots remplis dans un buffer, commence à 0
         //error TODO : traitement d'erreur
     }
+
+    return 1; //successful
 }
