@@ -61,7 +61,7 @@ const char *fractal_get_name(const struct fractal *f)
 
 int fractal_get_value(const struct fractal *f, int x, int y)
 {
-    if(x >= 0 && x < f->width && y >= 0 && y < f->height) {
+    if(x <= 0 && x > f->width && y <= 0 && y > f->height) {
         return -1; // retourne -1 si erreur : (x,y) en dehors de l'image
     }
     return f->values[x + (y * f->width)];

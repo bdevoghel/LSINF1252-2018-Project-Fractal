@@ -1,4 +1,5 @@
 # code basé essentiellement de https://gl.developpez.com/tutoriel/outil/makefile/
+# TODO : make lib
 
 # compilateur utilisé
 CC = gcc

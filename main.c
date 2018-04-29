@@ -29,19 +29,18 @@ int maxthreads = 1; // nombre de threads de calcul maximal, 1 par défault (vale
 
 int files_to_read; // nombre de fichiers à lire pour extraire les infos des fractales
 char file_out[64]; // nom du fichier de sortie finale
-fractal_t *highest_average_fractal; // fractale ayant la plus grande moyenne
 
 // variables modifiables
 int mt_multiplier = 2; // facteur du nombre de slots dans un buffer (= mt_multiplier * maxthreads)
 
-// creation des protections du premier buffer
+// création des protections du premier buffer
 node_t *toCompute_buffer;
 pthread_mutex_t toCompute_mutex;
 sem_t toCompute_empty;
 sem_t toCompute_full;
 int toCompute_state; // 0 si encore utilisé, 1 si plus utilisé
 
-// creation des protections du deuxième buffer
+// création des protections du deuxième buffer
 node_t *computed_buffer;
 pthread_mutex_t computed_mutex;
 sem_t computed_empty;
@@ -97,40 +96,40 @@ int main(int argc, const char *argv[])
     }
 
     // lancement des thread de lecture, un thraed par fichier à lire
-    printf("Lancement des thread de lecture des fichiers");
-    pthread_t *reader_threads[files_to_read]; // threads de lecture de fichiers
+    printf("Lancement des threads de lecture des fichiers\n");
+    pthread_t reader_threads[files_to_read]; // threads de lecture de fichiers
     int j = 0; // emplacement dans [reader_threads]
-    for(int i = 1 ; i<argc ; i++) { // parcourt tous les arguments
-        if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d") || (!d_option && i == argc-1)) { // paramètre ou fichier de sortie finale
+    for(int i = 1 ; i<argc ; ++i) { // parcourt tous les arguments
+        if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d") || i == argc-1) { // option ou fichier de sortie finale
             if(!strcmp(argv[i], "--maxthreads")) {
-                i++; // passer argument de l'option maxthread
+                ++i; // passer argument de l'option maxthread
             }
             // ne rien faire
         } else { // fichier à lire
-	        char file_name[64];
+            char file_name[64];
             if(!strcmp(argv[i], "-")) { // nom du fichier à lire est l'entrée std
-                printf("BESOIN D'UTILISER STD_IN"); // TODO : lecture de l'entrée std
+                printf("BESOIN D'UTILISER STD_IN\n"); // TODO : lecture de l'entrée std
             } else { // nom du fichier à lire est un fichier normal
                 strcpy(file_name, argv[i]);
             }
             pthread_t new_thread; // création d'un nouveau thread
-            reader_threads[j] = &new_thread; // thread mis dans le vecteur des lecteurs
             if(pthread_create(&new_thread, NULL, file_reader, (void *) file_name)) { // initialisation du thread lecteur de fichier
                 // TODO : traitement d'erreur
             }
-            j++; // passer à l'emplacement suivant dans le vecteur de threads
+            reader_threads[j] = new_thread; // thread mis dans le vecteur des lecteurs
+            ++j; // passer à l'emplacement suivant dans le vecteur de threads
         }
     } // threads de lecture lancés et stockés dans [reader_threads]
 
     // lancement des threads de calcul
-    printf("Lancement des thread de calcul des fractales");
-    pthread_t *calculating_threads[maxthreads]; // threads de calcul
-    for(int j = 0 ; j < maxthreads ; j++) {
+    printf("Lancement des threads de calcul des fractales\n");
+    pthread_t calculating_threads[maxthreads]; // threads de calcul
+    for(int j = 0 ; j < maxthreads ; ++j) {
         pthread_t new_thread; // création d'un nouveau thread de calcul
-        calculating_threads[j] = &new_thread; // thread mis dans le vecteur des calculateurs
         if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             // TODO : traitement d'erreur
         }
+        calculating_threads[j] = new_thread; // thread mis dans le vecteur des calculateurs
     } // threads de calcul lancés et stockés dans [calculating_threads]
 
 
@@ -141,13 +140,13 @@ int main(int argc, const char *argv[])
     }
 
     // attendre que tous les threads de lecture aient fini de lire tous les fichiers
-    for(int i = 0 ; i < files_to_read ; i++) {
-        pthread_join(*reader_threads[i], NULL);
+    for(int i = 0 ; i < files_to_read ; ++i) {
+        pthread_join(reader_threads[i], NULL);
     }
     pthread_mutex_lock(&executing_states);
     all_files_read = 1; // modifier l'état
     pthread_mutex_unlock(&executing_states);
-    printf("Lecture des fichiers fini");
+    printf("Lecture des fichiers fini\n");
 
     // attendre que [toCompute_buffer] soit vidé
     while(stack_length(toCompute_buffer) != 0);
@@ -156,37 +155,32 @@ int main(int argc, const char *argv[])
     pthread_mutex_unlock(&buffer_states);
 
     // attendre que tous les threads de calcul aient fini de calculer toutes les fractales
-    for(int i = 0 ; i < maxthreads ; i++) {
-        pthread_join(*calculating_threads[i], NULL);
+    for(int i = 0 ; i < maxthreads ; ++i) {
+        pthread_join(calculating_threads[i], NULL);
     }
     pthread_mutex_lock(&executing_states);
     all_fractals_calculated = 1; // modifier l'état
     pthread_mutex_unlock(&executing_states);
-    printf("Calcul des fractales fini");
+    printf("Calcul des fractales fini\n");
 
     // attendre que [computed_buffer] soit vidé
     while(stack_length(computed_buffer) != 0);
     pthread_mutex_lock(&buffer_states);
-    computed_state = 1; // copmuted_buffer a fini d'être utilisé
+    computed_state = 1; // computed_buffer a fini d'être utilisé
     pthread_mutex_unlock(&buffer_states);
 
+printf("TEST 1\n");
     // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
     pthread_join(printing_thread, NULL);
     pthread_mutex_lock(&executing_states);
     all_fractals_printed = 1; // modifier l'état
     pthread_mutex_unlock(&executing_states);
+    printf("Sortie des fractales fini\n");
 
-    // sortie de la fractale à la plus grande moyenne
-    // pas besoin de mutex sur [highest_average_fractal] car seulement utilisé dans [printing_thread] (déjà joiné)
-    printf("Création du fichier avec la fractale ayant la plus grande valeur de moyenne");
-    if(write_bitmap_sdl(highest_average_fractal, file_out)) {
-        // TODO : traitement d'erreur
-    }
+    //stack_free(toCompute_buffer);
+    //stack_free(computed_buffer);
 
-    //stack_free(&toCompute_buffer);
-    //stack_free(&computed_buffer);
-
-    printf("Programme exécuté correctement. Exiting ...");
+    printf("Programme exécuté correctement. Exiting ...\n");
     exit(EXIT_SUCCESS);
 } // end main()
 
@@ -197,19 +191,25 @@ int main(int argc, const char *argv[])
 void *file_reader(void *file_to_read)
 {
     char *filename = (char *)file_to_read;
-    printf("Fichier \"%s\" en train d'être lu", file_name);
+    printf("Fichier \"%s\" en train d'être lu\n", filename);
 
     // variables utilisées pour les fractales
     double a, b;
     int width, height;
 
-    FILE *file = fopen(filename, "r"); // ouverture du fichier
+    // ouverture du fichier
+    FILE *file = fopen(filename, "r");
     if(file == NULL) {
-        // TODO : traitement d'erreur
+        exit(EXIT_FAILURE);// TODO : traitement d'erreur
     }
+
+    // lecture des lignes du fichier
     char line[150]; // taille que peut avoir une ligne + marge
-    while(fgets(line, sizeof(line), file) != NULL) { // lecture des lignes du fichier
-        if(line[0] != '#') { // si commentaire : ignorer
+    while(fgets(line, sizeof(line), file) != NULL) { // parcourt les lignes tant qu'elles existent
+        if(line[0] == '#') { // affiche les commentaires TODO :  ne traite pas encore les lignes vides !!
+            printf("Dans le fichier %s        : %s", filename, line);
+        } else {
+            printf("Ajout de la fractale suivante à la pile : %s", line);
 
             // lecture des attributs de la fractale
             char *name = strtok(line, " ");
@@ -218,7 +218,7 @@ void *file_reader(void *file_to_read)
             a = atof(strtok(NULL, " "));
             b = atof(strtok(NULL, " "));
 
-            // ajout de la fractale sur la pile
+            // ajout de la fractale dans [toCompute_buffer]
             sem_wait(&toCompute_empty); // attendre qu'un slot se libère
             pthread_mutex_lock(&toCompute_mutex); // section critique
             if(stack_push(&toCompute_buffer, fractal_new(name, width, height, a, b))) { // TODO quid si fractal_new retourne NULL ?
@@ -226,36 +226,167 @@ void *file_reader(void *file_to_read)
             }
             pthread_mutex_unlock(&toCompute_mutex);	// fin de section critique
             sem_post(&toCompute_full); // un slot rempli de plus
-
         }
     }
-    fclose(file); // fermer le document ouvert
-    pthread_exit(EXIT_SUCCESS);
-}
+
+    if(fclose(file)) { // fermer le document ouvert
+        // TODO : traitement d'erreur
+    }
+    pthread_exit(NULL);
+} // void *file_reader()
 
 /**
  * TODO
  * consommateur de toCompute_buffer, producteur de computed_buffer, calcule les pixels des fractales
  */
-void *fractal_calculator(void *arg) //TODO déterminer arg
+void *fractal_calculator()
 {
-    printf("IN FUNCTION fractal_calculator() with parameter %s\n", (char*) arg);
-    // TODO
-    // créer dans fractal.c et fractal.h la fonction fractal_compute
+    fractal_t *toCompute_fractal; // fractale à extraire du buffer et à calculer avant de la remettre dans un autre buffer
 
-    return NULL;
-}
+    // regarder s'il y a des fractales à calculer
+    pthread_mutex_lock(&buffer_states);
+    int finished = toCompute_state;
+    pthread_mutex_unlock(&buffer_states);
+    while(!finished) {
+
+        // extraire une fractale à calculer du [toCompute_buffer]
+        sem_wait(&toCompute_full); // attente qu'un slot se remplisse
+        pthread_mutex_lock(&toCompute_mutex); // section critique
+        toCompute_fractal = stack_pop(&toCompute_buffer);
+        if (toCompute_fractal == NULL) { // TODO quid si fractal_new retourne NULL ?
+            // TODO : traitement d'erreur
+        }
+        pthread_mutex_unlock(&toCompute_mutex); // fin de section critique
+        sem_post(&toCompute_empty); // un slot libre en plus
+
+        // calculer les pixels de la fractale
+        for (int i = 0; i < fractal_get_width(toCompute_fractal) ; ++i) { // parcourt les abscisses
+            for (int j = 0; j < fractal_get_height(toCompute_fractal) ; ++j) { // parcourt les ordonnées
+                fractal_compute_value(toCompute_fractal, i, j);
+            }
+        }
+
+        // ajout de la fractale dans [computed_buffer]
+        sem_wait(&computed_empty); // attendre qu'un slot se libère
+        pthread_mutex_lock(&computed_mutex); // section critique
+        if (stack_push(&computed_buffer, toCompute_fractal)) {
+            // TODO : traitement d'erreur
+        }
+        pthread_mutex_unlock(&computed_mutex);    // fin de section critique
+        sem_post(&computed_full); // un slot rempli de plus
+
+        // regarder s'il reste des fractales à calculer
+        pthread_mutex_lock(&buffer_states);
+        finished = toCompute_state;
+        pthread_mutex_unlock(&buffer_states);
+    }
+    pthread_exit(NULL);
+} // void *fractal_calculator()
 
 /**
  * TODO
  */
-void *fractal_printer(void *arg) //TODO déterminer arg
+void *fractal_printer()
 {
-    printf("IN FUNCTION fractal_printer() with parameter %s\n", (char*) arg);
-    // TODO
+    fractal_t *computed_fractal; // fractale à extraire du buffer et à analyser
+    node_t *highest_fractal_stack; // pile contenant la/les fractale(s) avec la plus haute valeur moyenne
+    //fractal_t *highest_fractal;
 
-    return NULL;
-}
+    // regarder s'il y a des fractales à extraire
+    pthread_mutex_lock(&buffer_states);
+    int finished = computed_state;
+    pthread_mutex_unlock(&buffer_states);
+    while(!finished) {
+
+        // extraire une fractale calculée du [computed_buffer]
+        sem_wait(&computed_full); // attente qu'un slot se remplisse
+        pthread_mutex_lock(&computed_mutex); // section critique
+        computed_fractal = stack_pop(&computed_buffer);
+        if(computed_fractal == NULL) {
+            // TODO : traitement d'erreur
+        }
+        pthread_mutex_unlock(&computed_mutex); // fin de section critique
+        sem_post(&computed_empty); // un slot libre en plus
+
+        // calculer la moyenne et garder les plus grandes
+        fractal_compute_average(computed_fractal);
+        if(highest_fractal_stack == NULL) {
+            stack_push(&highest_fractal_stack, computed_fractal);
+        } else {
+            fractal_t *temp_highest_fractal = stack_pop(&highest_fractal_stack);
+            if(fractal_get_average(temp_highest_fractal) > fractal_get_average(computed_fractal)) {
+                stack_push(&highest_fractal_stack, temp_highest_fractal); // remet à sa place
+printf("TEST p1 : %s\n", fractal_get_name(temp_highest_fractal));
+            } else if(fractal_get_average(temp_highest_fractal) == fractal_get_average(computed_fractal)) {
+                stack_push(&highest_fractal_stack, temp_highest_fractal); // remet à sa place ...
+printf("TEST p2 : %s\n", fractal_get_name(temp_highest_fractal));
+                stack_push(&highest_fractal_stack, computed_fractal); // ... et ajoute le nouveau
+printf("TEST p3 : %s\n", fractal_get_name(computed_fractal));
+            } else {
+                stack_free(highest_fractal_stack); // libère tous les anciens meilleurs
+                stack_push(&highest_fractal_stack, computed_fractal); // mets le nouveau meilleur sur la pile
+printf("TEST p4 : %s\n", fractal_get_name(computed_fractal));
+            }
+        }
+printf("TEST 2\n");
+
+/*printf("TEST 1\n");
+        fractal_compute_average(computed_fractal);
+printf("TEST 11\n");
+        if(fractal_get_average(highest_fractal) < fractal_get_average(computed_fractal)) {
+printf("TEST 12\n");
+            fractal_t *temp = highest_fractal;
+            highest_fractal = computed_fractal;
+            fractal_free(temp);
+        } else {
+            fractal_free(computed_fractal);
+        }
+printf("TEST 2\n");*/
+
+        // affiche la fractale si option -d est présente
+        if(d_option) {
+            // ajouter .bmp au nom de la fractale
+            char name_and_extention[68];
+            strcpy(name_and_extention, fractal_get_name(computed_fractal));
+            strcat(name_and_extention, ".bmp");
+
+            if(write_bitmap_sdl(computed_fractal, name_and_extention)) {
+                // TODO : traitement d'erreur
+            }
+	    printf("Fractale \"%s\" extraite sous forme .bmp\n", name_and_extention);
+        }
+
+        // regarder s'il reste des fractales à extraire
+        pthread_mutex_lock(&buffer_states);
+        finished = computed_state;
+        pthread_mutex_unlock(&buffer_states);
+printf("TEST f : %i , l : %i\n" , finished, stack_length(computed_buffer));
+    }
+
+
+printf("TEST 21\n");
+    // sortie des/de la fractale(s) à la plus grande moyenne
+printf("TEST l1 : %i\n", stack_length(highest_fractal_stack));
+    fractal_t *highest_fractal = stack_pop(&highest_fractal_stack);
+printf("TEST l2 : %i\n", stack_length(highest_fractal_stack));
+printf("TEST n : %s\n", fractal_get_name(highest_fractal));
+    while(highest_fractal != NULL) {
+        printf("Création du fichier BMP avec la fractale ayant la plus grande valeur de moyenne : \"%s\"\n", fractal_get_name(highest_fractal));
+        if(write_bitmap_sdl(highest_fractal, file_out)) {
+            // TODO : traitement d'erreur
+        }
+        highest_fractal = stack_pop(&highest_fractal_stack);
+    }
+    stack_free(highest_fractal_stack);
+printf("TEST 4\n");
+/*printf("TEST 4\n");
+    if(write_bitmap_sdl(highest_fractal, file_out)) {
+        // TODO : traitement d'erreur
+    }*/
+printf("TEST 5\n");
+    pthread_exit(NULL);
+} // void *fractal_printer()
+
 
 /* SOUS_FONCTIONS D'AIDE */
 
@@ -269,10 +400,10 @@ void *fractal_printer(void *arg) //TODO déterminer arg
  */
 int process_options(int argc, char *argv[])
 {
-    for(int i = 1 ; i<argc ; i++) { // parcourt tous les arguments
+    for(int i = 1 ; i<argc ; ++i) { // parcourt tous les arguments
         if(!strcmp(argv[i], "--maxthreads")) { // paramètre du nombre de threads de calcul
             mt_option = 1;
-            i++; // passer à l'argument correspondant à l'option
+            ++i; // passer à l'argument correspondant à l'option
             maxthreads = atoi(argv[i]);
         } else if(!strcmp(argv[i], "-d")) { // paramètre d'affichage des fractales
             d_option = 1;

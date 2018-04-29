@@ -30,6 +30,8 @@ int stack_push(node_t **stack, fractal_t *fract)
 
 struct fractal *stack_pop(node_t **stack)
 {
+    if(stack_length(*stack) == 0) return NULL;
+
     node_t *head = *stack;
     fractal_t *head_value = head->fract; // extraire le pointeur de la fractale de la tête de la pile
     *stack = head->next; // assigner nouvelle tête de pile
@@ -43,7 +45,7 @@ void stack_free(node_t *stack)
     while (stack != NULL) {
         node_t *head = stack;
         stack = head->next;
+        fractal_free(head->fract);
         free(head);
     }
-    // TODO : aussi libérer la pile-même ?? free(stack);
 }
