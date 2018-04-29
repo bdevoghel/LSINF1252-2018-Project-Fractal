@@ -42,10 +42,10 @@ struct fractal *stack_pop(node_t **stack)
 
 void stack_free(node_t *stack)
 {
-    while (stack != NULL) {
+    while (stack != NULL) { // tant qu'il y a des éléments dans la pile
         node_t *head = stack;
-        stack = head->next;
-        fractal_free(head->fract);
-        free(head);
+        stack = head->next; // avance dans la pile
+        fractal_free(head->fract); // libère l'élément de l'ancienne tête
+        free(head); // libère la tête
     }
 }

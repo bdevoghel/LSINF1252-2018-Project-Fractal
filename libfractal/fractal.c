@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include "fractal.h"
 
-// TODO replace struct fractal par fractal_t
-
 struct fractal *fractal_new(const char *name, int width, int height, double a, double b)
 {
     struct fractal *new_frac = (struct fractal *) malloc(sizeof(struct fractal)); // alloue l'espace nécessaire pour la fractale
@@ -62,6 +60,7 @@ const char *fractal_get_name(const struct fractal *f)
 int fractal_get_value(const struct fractal *f, int x, int y)
 {
     if(x <= 0 && x > f->width && y <= 0 && y > f->height) {
+        printf("Tried to get value of fractal \"%s\" outside of limits : (%i,%i) - Returning error code", fractal_get_name(f), x, y);
         return -1; // retourne -1 si erreur : (x,y) en dehors de l'image
     }
     return f->values[x + (y * f->width)];
@@ -70,7 +69,7 @@ int fractal_get_value(const struct fractal *f, int x, int y)
 void fractal_set_value(struct fractal *f, int x, int y, int val)
 {
     if(x >= 0 && x < f->width && y >= 0 && y < f->height) {
-        // TODO : msg d'erreur // affiche message d'erreur : (x,y) en dehors de l'image
+        printf("Tried to set value for fractal \"%s\" outside of limits : (%i,%i) - Leaving original value", fractal_get_name(f), x, y);
     }
 
     // actualise la valeur totale de la fractale en fonction de ce qu'il y avait avant en (x,y)
