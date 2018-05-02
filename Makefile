@@ -1,5 +1,4 @@
 # code basé essentiellement de https://gl.developpez.com/tutoriel/outil/makefile/
-# TODO : make lib
 
 # compilateur utilisé
 CC = gcc
@@ -17,7 +16,8 @@ OBJ = $(SRC:.c=.o)
 EXEC = main
 
 # regroupe dans cette dépendance l'ensemble des exécutables à produire
-all: $(EXEC)
+build: $(EXEC)
+lib : libfractal/libfractal.a
 
 libfractal/libfractal.a:
 	@echo 'Building libfractal'
@@ -29,7 +29,7 @@ libstack/libstack.a:
 
 main: $(OBJ) $(LIBRAIRIES)
 	@echo 'Making executable'
-	@$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS) $(LIBRAIRIES)
+	@$(CC) -o  gdb.c $@ $^ $(LDFLAGS) $(CFLAGS) $(LIBRAIRIES) # TODO enlever gdb.c
 
 # pour main (et tout autre .c à construire à partir d'un .o)
 %.o: %.c
@@ -37,13 +37,12 @@ main: $(OBJ) $(LIBRAIRIES)
 	@$(CC) -o $@ -c $< $(CFLAGS)
 
 # dépendances qui seront systématiquement reconstruites
-.PHONY: clean mrproper
+.PHONY: build clean rebuild
 	
 # permet de supprimer tous les fichiers intermédiaires
 clean:
 	@echo 'Cleaning previously made files'
-	@rm -rf $(EXEC) *.o libfractal/*.o libfractal/*.a libstack/*.o libstack/*.a *.bmp
+	@rm -f $(EXEC) *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp #TODO quid si pas .bmp ??
 
-# supprime tout ce qui peut être régénéré et permet une reconstruction complète du projet
-mrproper: clean
-	@rm -rf $(EXEC)
+# supprime tout et reconstruit le projet
+rebuild: clean build
