@@ -1,17 +1,9 @@
-/**
- * Exemple d'utilisation :
- *      ./main [-d] [--maxthreads n] fichier1 [fichierN] fichierOut
- *      -d : afficher toutes les fractales calculées
- *      --maxthreads X : vouloir utiliser X threads de calcul, sinon 1 par défault
- *      fichier* : fichier à partir duquel extraire les infos des fractales à calculer
- *      fichierOut : fichier dans lequel sortir la fractale à la plus haute moyenne
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
 
+#include <getopt.h>
 #include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -21,7 +13,7 @@
 
 // TODO : insérer gitlog au répertoire à rendre
 // TODO : quid si appel d'aileurs ? comment imprimer là ?
-// TODo : error handeling sur sem_wait()
+// TODO : error handeling sur sem_wait()
 
 /* VARIABLES GLOBALES */
 
@@ -35,42 +27,54 @@ char file_out[64]; // nom du fichier de sortie finale
 // variables modifiables
 int mt_multiplier = 2; // facteur du nombre de slots dans un buffer (= mt_multiplier * maxthreads)
 
-// création des protections du premier buffer
+// protections du premier buffer
 node_t *toCompute_buffer;
 pthread_mutex_t toCompute_mutex;
 sem_t toCompute_empty;
 sem_t toCompute_full;
-int toCompute_state; // 0 si encore utilisé, 1 si plus utilisé
+int toCompute_state; // 0 si buffer est encore utilisé, 1 si buffer n'est plus utilisé
 
-// création des protections du deuxième buffer
+// protections du deuxième buffer
 node_t *computed_buffer;
 pthread_mutex_t computed_mutex;
 sem_t computed_empty;
 sem_t computed_full;
-int computed_state; // 0 si encore utilisé, 1 si plus utilisé
+int computed_state; // 0 si buffer est encore utilisé, 1 si buffer n'est plus utilisé
 
 // protection des états des buffers
-pthread_mutex_t buffer_states; // protection des états des buffers, pour toCompute_state et computed_state
-pthread_mutex_t executing_states; // protection des états de l'exécution du programme, pour les variables de fin de programme :
+pthread_mutex_t buffer_states; // protection des états des buffers (toCompute_state et computed_state)
+pthread_mutex_t executing_states; // protection des états de l'exécution du programme, pour les variables de fin de programme TODO nécessaire si que dans main ?
 
 // variables de fin de programme, 0==FALSE , 1==TRUE
 int all_files_read = 0;
 int all_fractals_calculated = 0;
 int all_fractals_printed = 0;
+int fractals_to_process = 0;
+int fractals_to_calculate = 0;
+
 
 /* DECLARATION DES FONCTIONS UTILISÉES */
 
-void *file_reader(); // pour le thread producteur du buffer toCompute_buffer
-void *fractal_calculator(); // pour le thread consommateur de computed_buffer er producteur de computed_buffer
-void *fractal_printer(); // pour le thread consommateur de computed_buffer
-int process_options(); // pour l'initialsiation des options
+void process_options(); // pour l'initialsiation des options
 int initialise_buffer_protection(); // pour initiasliser les mutex et semaphores d'un buffer
+void *file_reader(); // pour le thread producteur du buffer toCompute_buffer
+void *fractal_calculator(); // pour le thread consommateur de computed_buffer et producteur de computed_buffer
+void *fractal_printer(); // pour le thread consommateur de computed_buffer
+int get_protected_variable(char variable[]); // retourne la valeur de la variable donnée en parmètre après un accès protégé
 
 
 /* FONCTIONS PRINCIPALES */
 
 /**
- * main : calcule et affiche les fractales voulues, retrouvées dans les fichiers passés en argument
+ * main : calcule et affiche des fractales retrouvées dans les fichiers passés en argument
+ *
+ * Exemple d'utilisation :
+ *      ./main [-d] [--maxthreads n] fichier1 [fichierN] fichierOut
+ *      -d : afficher toutes les fractales calculées
+ *      --maxthreads X : vouloir utiliser X threads de calcul, sinon 1 par défault
+ *      fichier* : fichier à partir duquel extraire les infos des fractales à calculer
+ *      fichierOut : fichier dans lequel sortir la fractale à la plus haute moyenne
+ *      peu importe l'ordre,  tant que fichierOut se retrouve en dernier
  *
  * @argc : nombre d'arguments reçus
  * @argv : vecteurs des arguments (strings) reçus
@@ -78,21 +82,16 @@ int initialise_buffer_protection(); // pour initiasliser les mutex et semaphores
  */
 int main(int argc, const char *argv[])
 {
-    // lecture des arguments
-    if(argc < 3) { // nécessite au moins 3 arguments (nom de fonction, fichier d'entrée, fichier de sortie)
-        fprintf(stderr, "Not enough arguments : at least 3 arguments needed in order to calculate fractals (function name, entry file, out file)\n"); // imprime le problème à la stderr
-        exit(EXIT_FAILURE);
-    } else {
-        files_to_read = process_options(argc, argv); // traitement des options, récupère le nombre de fichiers à lire
-    }
+    // lecture des arguments, initialisation de d_option, mt_option, maxthreads, files_to_read et file_out
+    process_options(argc, argv);
 
     // initialisation des mutex, semaphores et buffers
-    int slots_in_buffer = ceil(maxthreads * mt_multiplier);
-    if(initialise_buffer_protection(&toCompute_mutex, &toCompute_empty, &toCompute_full, slots_in_buffer)) { // pour toCompute_buffer
+    int slots_in_buffer = ceil(maxthreads * mt_multiplier); // nombre d'éléments max dans un buffer
+    if(initialise_buffer_protection(&toCompute_mutex, &toCompute_empty, &toCompute_full, slots_in_buffer)) { // initialisation de toCompute_buffer
         fprintf(stderr, "Error at toCompute_buffer initialisation - Exiting main\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
-    if(initialise_buffer_protection(&computed_mutex,  &computed_empty,  &computed_full,  slots_in_buffer)) { // pour computed_buffer
+    if(initialise_buffer_protection(&computed_mutex,  &computed_empty,  &computed_full,  slots_in_buffer)) { // initialisation de computed_buffer
         fprintf(stderr, "Error at computed_buffer initialisation - Exiting main\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
@@ -105,21 +104,23 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // lancement des thread de lecture, un thraed par fichier à lire
+    /* LANCEMENT DES THREADS */
+
+    // lancement des thread de lecture, un thread par fichier à lire
     printf("Lancement des threads de lecture des fichiers\n");
-    pthread_t reader_threads[files_to_read]; // threads de lecture de fichiers
+    pthread_t reader_threads[files_to_read]; // vecteur contenant les threads de lecture de fichiers
     int j = 0; // emplacement dans [reader_threads]
-    for(int i = 1 ; i<argc ; ++i) { // parcourt tous les arguments
-        if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d") || i == argc-1) { // option ou fichier de sortie finale
+    for(int i = 1 ; i<argc-1 ; ++i) { // parcourt tous les arguments sauf premier ("main") et dernier ("fichierOut")
+        if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d")) { // si option
             if(!strcmp(argv[i], "--maxthreads")) {
-                ++i; // passer argument de l'option maxthread
+                ++i; // passe l'argument de l'option maxthread
             }
             // ne rien faire
-        } else { // fichier à lire
-            char file_name[64];
-            if(!strcmp(argv[i], "-")) { // nom du fichier à lire est l'entrée std
+        } else { // si fichier à lire
+            char file_name[64]; // TODO taille des noms ??
+            if(!strcmp(argv[i], "-")) { // fichier à lire est l'entrée std
                 printf("BESOIN D'UTILISER STD_IN\n"); // TODO : lecture de l'entrée std
-            } else { // nom du fichier à lire est un fichier normal
+            } else { // fichier à lire est un fichier normal
                 strcpy(file_name, argv[i]);
             }
             pthread_t new_thread; // création d'un nouveau thread
@@ -127,43 +128,43 @@ int main(int argc, const char *argv[])
                 fprintf(stderr, "Error at \"file_reader\" thread creation - Exiting main\n"); // imprime le problème à la stderr
                 exit(EXIT_FAILURE);
             }
-            reader_threads[j] = new_thread; // thread mis dans le vecteur des lecteurs
+            reader_threads[j] = new_thread; // nouveau thread mis dans le vecteur des lecteurs
             ++j; // passer à l'emplacement suivant dans le vecteur de threads
         }
     } // threads de lecture lancés et stockés dans [reader_threads]
 
     // lancement des threads de calcul
-    // TODO problème à création de plus de threads de calculs que 4
     printf("Lancement des threads de calcul des fractales\n");
-    pthread_t calculating_threads[maxthreads]; // threads de calcul
+    pthread_t calculating_threads[maxthreads]; // vecteur contenant les threads de calcul
     for(int j = 0 ; j < maxthreads ; ++j) {
         pthread_t new_thread; // création d'un nouveau thread de calcul
         if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             fprintf(stderr, "Error at \"fractal_calculator\" thread creation - Exiting main\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
         }
-        calculating_threads[j] = new_thread; // thread mis dans le vecteur des calculateurs
+        calculating_threads[j] = new_thread; // nouveau thread mis dans le vecteur des calculateurs
     } // threads de calcul lancés et stockés dans [calculating_threads]
 
-
     // lancement du thread de sortie TODO  un seul thread de sortie ??
-    pthread_t printing_thread; // thread de sortie des fractales
+    pthread_t printing_thread; // création du thread de sortie des fractales
     if(pthread_create(&printing_thread, NULL, fractal_printer, NULL)) { // initialisation du thread de sortie
         fprintf(stderr, "Error at \"fractal_printer\" thread creation - Exiting main\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
-    }
+    } // threads de sortie lancé
+
+    /* ATTENTE DE L'AVENCÉE DES THREADS */
 
     // attendre que tous les threads de lecture aient fini de lire tous les fichiers
     for(int i = 0 ; i < files_to_read ; ++i) {
-        pthread_join(reader_threads[i], NULL);
+        pthread_join(reader_threads[i], NULL); // finir les threads de lecture, pas de valeur de retour attendue (attente sur pthread_join tant qu'un thread n'a pas retourné)
     }
-    pthread_mutex_lock(&executing_states);
+    pthread_mutex_lock(&executing_states); // section critique
     all_files_read = 1; // modifier l'état
-    pthread_mutex_unlock(&executing_states);
+    pthread_mutex_unlock(&executing_states); // fin de section critique
     printf("Lecture des fichiers fini\n");
 
+    /*
     // attendre que [toCompute_buffer] soit vidé
-    /* TODO SUPPR
     pthread_mutex_lock(&toCompute_mutex);
     int length_toCompute = stack_length(toCompute_buffer);
     pthread_mutex_unlock(&toCompute_mutex);
@@ -172,25 +173,26 @@ int main(int argc, const char *argv[])
         length_toCompute = stack_length(toCompute_buffer);
         pthread_mutex_unlock(&toCompute_mutex);
     }
-    */
+    // OU ALORS
     int *sem_val_toCompute; // pointeur vers le nombre d'éléments dans le spmaphore
     while(!sem_getvalue(&toCompute_full, sem_val_toCompute) && *sem_val_toCompute == slots_in_buffer); // attend tant qu'il y a des éléments dans [toCompute_buffer]
     pthread_mutex_lock(&buffer_states);
     toCompute_state = 1; // toCopmute_buffer a fini d'être utilisé
     pthread_mutex_unlock(&buffer_states);
     printf("Plus aucune fractale en attente de calcul\n");
-
+    */
+    printf("TEST 10\n");
     // attendre que tous les threads de calcul aient fini de calculer toutes les fractales
     for(int i = 0 ; i < maxthreads ; ++i) {
-        pthread_join(calculating_threads[i], NULL);
+        pthread_join(calculating_threads[i], NULL); // finir les threads de calcul, pas de valeur de retour attendue (attente sur pthread_join tant qu'un thread n'a pas retourné)
     }
-    pthread_mutex_lock(&executing_states);
+    pthread_mutex_lock(&executing_states); // section critique
     all_fractals_calculated = 1; // modifier l'état
-    pthread_mutex_unlock(&executing_states);
+    pthread_mutex_unlock(&executing_states); // fin de section critique
     printf("Calcul des fractales fini\n");
 
+    /*
     // attendre que [computed_buffer] soit vidé
-    /* TODO SUPPR
     pthread_mutex_lock(&computed_mutex);
     int length_computed = stack_length(computed_buffer);
     pthread_mutex_unlock(&computed_mutex);
@@ -199,23 +201,27 @@ int main(int argc, const char *argv[])
         length_computed = stack_length(computed_buffer);
         pthread_mutex_unlock(&computed_mutex);
     }
-    */
+    // OU ALORS
     int *sem_val_computed; // pointeur vers le nombre d'éléments dans le spmaphore
     while(!sem_getvalue(&computed_full, sem_val_computed) && *sem_val_computed == slots_in_buffer); // attend tant qu'il y a des éléments dans [computed_buffer]
     pthread_mutex_lock(&buffer_states);
     computed_state = 1; // computed_buffer a fini d'être utilisé
     pthread_mutex_unlock(&buffer_states);
     printf("Plus aucune fractale en attente de sortie\n");
-
+    */
+    printf("TEST 11\n");
     // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
-    pthread_join(printing_thread, NULL);
-    pthread_mutex_lock(&executing_states);
+    pthread_join(printing_thread, NULL); // finir le thread de sortie, pas de valeur de retour attendue (attente sur pthread_join tant que le thread n'a pas retourné)
+    printf("TEST 12\n");
+    pthread_mutex_lock(&executing_states); // section critique
     all_fractals_printed = 1; // modifier l'état
-    pthread_mutex_unlock(&executing_states);
+    pthread_mutex_unlock(&executing_states); // fin de section critique
     printf("Sortie des fractales fini\n");
 
+    // libération de toutes les variables enregistrées
     stack_free(toCompute_buffer);
     stack_free(computed_buffer);
+    // TODO free autre chose ? mutex ? semaphores ?
 
     printf("Programme exécuté correctement. EXIT\n");
     exit(EXIT_SUCCESS);
@@ -227,29 +233,28 @@ int main(int argc, const char *argv[])
  *
  * @file_to_read : nom du fichier à lire
  */
-void *file_reader(void *file_to_read)
+void *file_reader(char *file_to_read)
 {
-    char *filename = (char *)file_to_read;
-    printf("Fichier \"%s\" en train d'être lu\n", filename);
+    printf("Lecture du fichier \"%s\"\n", file_to_read);
 
     // variables utilisées pour les fractales
     double a, b;
     int width, height;
 
     // ouverture du fichier
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen(file_to_read, "r");
     if(file == NULL) {
-        fprintf(stderr, "Error at file \"%s\" opening - Exiting from file_reader\n", filename); // imprime le problème à la stderr
+        fprintf(stderr, "Error at file \"%s\" opening - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
 
     // lecture des lignes du fichier
     char line[150]; // taille que peut avoir une ligne + marge
     while(fgets(line, sizeof(line), file) != NULL) { // parcourt les lignes tant qu'elles existent
-        if(line[0] == '#') { // affiche les commentaires
-            printf("Dans le fichier %s        : %s", filename, line);
-        } else if(line[0] == "\n") { // passe les lignes vides
+        if(strlen(line) < 2 || line[0] == '\n') { // passe les lignes vides // TODO ne marche pas quid pour les lignes vides ?
             // rien faire
+        } else if(line[0] == '#') { // affiche les commentaires
+            printf("Commentaire dans le fichier %s : %s", file_to_read, line);
         } else {
             printf("Ajout de la fractale suivante à la pile : %s", line);
 
@@ -273,14 +278,20 @@ void *file_reader(void *file_to_read)
                             "Error at pushing into stack - Exiting from file_reader\n"); // imprime le problème à la stderr
                     exit(EXIT_FAILURE);
                 }
-                pthread_mutex_unlock(&toCompute_mutex);    // fin de section critique
+                pthread_mutex_unlock(&toCompute_mutex); // fin de section critique
                 sem_post(&toCompute_full); // un slot rempli de plus
+
+                // incrémentation du nombre de fractales a process
+                pthread_mutex_lock(&executing_states); // section critique
+                fractals_to_process++; // incrémente la valeur
+                fractals_to_calculate++;
+                pthread_mutex_unlock(&executing_states); // fin de section critique
             }
         }
     }
 
     if(fclose(file)) { // fermer le document ouvert
-        fprintf(stderr, "Error at file \"%s\" closing - Exiting from file_reader\n", filename); // imprime le problème à la stderr
+        fprintf(stderr, "Error at file \"%s\" closing - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
     pthread_exit(NULL);
@@ -296,13 +307,22 @@ void *fractal_calculator()
     fractal_t *toCompute_fractal; // fractale à extraire du buffer et à calculer avant de la remettre dans un autre buffer
 
     // regarder s'il y a des fractales à calculer
-    pthread_mutex_lock(&buffer_states);
+    /*pthread_mutex_lock(&buffer_states);
     int finished = toCompute_state;
     pthread_mutex_unlock(&buffer_states);
-    while(!finished) {
+    while(!finished) {*/
+    //int sem_value;
+    while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_calculate") > 0/*(!sem_getvalue(&toCompute_full, &sem_value) && sem_value > 0)*/) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
 
+        // décrémentation du nombre de fractales a calculer
+        pthread_mutex_lock(&executing_states); // section critique
+        fractals_to_calculate--; // décrémente la valeur
+        pthread_mutex_unlock(&executing_states); // fin de section critique
+
+    printf("TEST 10\n");
         // extraire une fractale à calculer du [toCompute_buffer]
         sem_wait(&toCompute_full); // attente qu'un slot se remplisse
+    printf("TEST 11\n");
         pthread_mutex_lock(&toCompute_mutex); // section critique
         toCompute_fractal = stack_pop(&toCompute_buffer);
         if(toCompute_fractal == NULL) {
@@ -329,10 +349,11 @@ void *fractal_calculator()
         pthread_mutex_unlock(&computed_mutex);    // fin de section critique
         sem_post(&computed_full); // un slot rempli de plus
 
-        // regarder s'il reste des fractales à calculer
+        /*// regarder s'il reste des fractales à calculer
         pthread_mutex_lock(&buffer_states);
         finished = toCompute_state;
-        pthread_mutex_unlock(&buffer_states);
+        pthread_mutex_unlock(&buffer_states);*/
+
     }
     printf("Sortie d'un thread de calcul\n");
     pthread_exit(NULL);
@@ -351,11 +372,12 @@ void *fractal_printer()
     node_t *highest_fractal_stack; // pile contenant la/les fractale(s) avec la plus haute valeur moyenne
     fractal_t *temp_highest_fractal; // fractale utilisé lors de la comparaison de moyennes
 
-    // regarder s'il y a des fractales à extraire
+    /*// regarder s'il y a des fractales à extraire
     pthread_mutex_lock(&buffer_states);
     int finished = computed_state;
     pthread_mutex_unlock(&buffer_states);
-    while(!finished) { // tant qu'il y a des fractales à extraire
+    while(!finished) { // tant qu'il y a des fractales à extraire */
+    while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_process") > 0) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
         // extraire une fractale calculée du [computed_buffer]
         sem_wait(&computed_full); // attente qu'un slot se remplisse TODO problème ici quand -d n'est pas présent
         pthread_mutex_lock(&computed_mutex); // section critique
@@ -370,15 +392,15 @@ void *fractal_printer()
         // affiche la fractale si option -d est présente
         if(d_option) {
             // ajouter .bmp au nom de la fractale
-            char name_and_extention[68];
-            strcpy(name_and_extention, fractal_get_name(computed_fractal));
-            strcat(name_and_extention, ".bmp"); // TODO sure about that ?
+            char name_and_extention[68]; // contiendra nouveau nom 
+            sprintf(name_and_extention, "%s.bmp", fractal_get_name(computed_fractal));
 
-            if(write_bitmap_sdl(computed_fractal, name_and_extention)) { // TODO sur du nom ?
+            // sortie de la fractale
+            if(write_bitmap_sdl(computed_fractal, name_and_extention)) {
                 fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
                 exit(EXIT_FAILURE);
             }
-            printf("Fractale \"%s\" extraite sous forme .bmp\n", name_and_extention);
+            printf("Fractale \"%s\" extraite en tant que fichier .bmp\n", name_and_extention);
         }
 
         // calculer la moyenne et garder les plus grandes
@@ -417,12 +439,17 @@ void *fractal_printer()
                 }
             }
         }
+        // décrémentation du nombre de fractales a process
+        pthread_mutex_lock(&executing_states); // section critique
+        fractals_to_process--; // décrémente la valeur
+        pthread_mutex_unlock(&executing_states); // fin de section critique
 
-        // regarder s'il reste des fractales à extraire
+        /*// regarder s'il reste des fractales à extraire
         pthread_mutex_lock(&buffer_states);
         finished = computed_state;
-        pthread_mutex_unlock(&buffer_states);
+        pthread_mutex_unlock(&buffer_states);*/
     }
+    printf("TEST 1\n");
 
     // sortie des/de la fractale(s) avec la plus grande moyenne
     fractal_t *highest_fractal = stack_pop(&highest_fractal_stack);
@@ -432,14 +459,23 @@ void *fractal_printer()
     }
     while(highest_fractal != NULL) {
         printf("Création du fichier BMP avec la fractale ayant la plus grande valeur de moyenne : \"%s\"\n", fractal_get_name(highest_fractal));
-        if(write_bitmap_sdl(highest_fractal, file_out)) { //TODO sur du nom ??
+        // ajouter .bmp au nom du fichier TODO sauf si .bmp déjà présent 
+        char name_and_extention[68]; // contiendra nouveau nom 
+        sprintf(name_and_extention, "%s.bmp", file_out);
+
+        // sortie de la fractale
+        if(write_bitmap_sdl(highest_fractal, name_and_extention)) {
             fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
         }
         fractal_free(highest_fractal);
         highest_fractal = stack_pop(&highest_fractal_stack);
+        printf("TEST 2\n");
     }
+    printf("TEST 3\n");
+
     stack_free(highest_fractal_stack);
+    printf("TEST 4\n");
 
     pthread_exit(NULL);
 } // void *fractal_printer()
@@ -448,51 +484,52 @@ void *fractal_printer()
 /* SOUS_FONCTIONS D'AIDE */
 
 /**
- * process_options : initialise d_option, mt_option, maxthreads et file_out qui sont retrouvés dans les
- *                   arguments d'appel à la main
+ * process_options : initialise d_option, mt_option, maxthreads, files_to_read et file_out en fonction arguments reçus lors de l'appel à la main
  *
  * @argc : nombre d'arguments reçus avec la main
  * @argv : vecteurs des arguments (strings) reçus avec la main
- * @return: nombre de fichiers à lire
  */
-int process_options(int argc, char *argv[])
+void process_options(int argc, char *argv[])
 {
-    /* TODO SUPPR
-       for(int i = 1 ; i<argc ; ++i) { // parcourt tous les arguments
-        if(!strcmp(argv[i], "--maxthreads")) { // paramètre du nombre de threads de calcul
-            mt_option = 1;
-            ++i; // passer à l'argument correspondant à l'option
-            maxthreads = atoi(argv[i]);
-        } else if(!strcmp(argv[i], "-d")) { // paramètre d'affichage des fractales
-            d_option = 1;
-        }
+    if(argc < 3) { // nécessite au moins 3 arguments (nom de fonction, fichier d'entrée, fichier de sortie)
+        fprintf(stderr, "Not enough arguments : at least 3 arguments needed in order to calculate fractals (function name, entry file, out file)\n"); // imprime le problème à la stderr
+        exit(EXIT_FAILURE);
     }
-    */
+
     // utilisation de getopt()
     int opt= 0;
-    static struct option long_options[] = {
+    static struct option long_options[] = { // pour les longues options
             {"maxthreads", required_argument, 0, 'm'}, // l'option m attend un int en argument
             {0,            0,                 0, 0  }}; // ligne vide obligatoire
     int long_index =0;
-    while((opt = getopt_long(argc, argv,"dm:", long_options, &long_index )) != -1) {
+    while((opt = getopt_long(argc, argv, "dm:", long_options, &long_index )) != -1) { // voir man getopt
         switch(opt) {
             case 'd' : // -d présent
                 d_option = 1;
+                break;
             case 'm' : // -maxthreads présent
                 mt_option = 1;
                 maxthreads = atoi(optarg);
+                break;
             default : // option inconnue
-                fprintf(stderr, "Usage : ./main [-d] [--maxthreads n] fichier1 [fichierN] fichierOut\n");
+                fprintf(stderr, "Unknown argument detected - Exiting from process_options\n");
                 exit(EXIT_FAILURE);
         }
     }
 
-    //TODO error handeling sur arguments (pas bon nombre ....)
-
     // copie du nom du fichier de sortie dans la variable file_out
     strcpy(file_out, argv[argc-1]);
 
-    // print messages d'info sur les options
+    // calcul du nombre de fichiers à lire
+    files_to_read = argc - 2 - d_option - mt_option*2;
+
+    // vérification de validité des arguments
+    if(files_to_read < 1) {
+        fprintf(stderr, "At least one file to be read needed - Exiting from process_options\n"); // imprime le problème à la stderr
+        exit(EXIT_FAILURE);
+    }
+
+    // affiche messages d'info sur les options
     if(d_option) {
         printf("Option -d présente : une image sera générée pour chaque fractale calculée\n");
     } else {
@@ -501,15 +538,16 @@ int process_options(int argc, char *argv[])
     if(mt_option) {
         if(maxthreads == 1) {
             printf("Option --maxthreads présente : %i thread de calcul sera utlisé\n", maxthreads);
+        } else if(maxthreads <= 0) {
+            fprintf(stderr, "Not enough calculation threads - Exiting from process_optios\n"); // imprime le problème à la stderr
+            exit(EXIT_FAILURE);
         } else {
             printf("Option --maxthreads présente : %i threads de calcul seront utlisés\n", maxthreads);
         }
     } else {
         printf("Option --maxthreads pas présente : le nombre par défault de %i thread de calcul sera utlisé\n", maxthreads);
     }
-
-    return argc - 1 - d_option - mt_option*2; // retourne le nombre de fichiers à lire
-}
+} // flags d'options sont mis à jour et nous connaissons [files_to_read] et [file_out]
 
 /**
  * initialise_buffer_protection : initialse le mutex et les sémaphores utiles à la protection de buffers
@@ -517,23 +555,60 @@ int process_options(int argc, char *argv[])
  * @mutex : mutex pour bloquer l'accès au buffer
  * @empty : sémaphore comptant le nombre de places libres dans le buffer
  * @full : sémaphore comptant le nombre de places occupées dans le buffer
- * @slots_in_buffer : nomre de places à prévoir dans le buffer
- * @return : 0 si tout correctement initialisé, 1 si erreur
+ * @slots_in_buffer : nombre de places à prévoir dans le buffer
+ * @return : 0 si tout est correctement initialisé, 1 si erreur
  */
 int initialise_buffer_protection(pthread_mutex_t *mutex, sem_t *empty, sem_t *full, int slots_in_buffer)
 {
     if(pthread_mutex_init(mutex, NULL) != 0) { // initialisation du mutex
-        fprintf(stderr, "Error at mutex initialisation - Returning error code\n"); // imprime le problème à la stderr
+        fprintf(stderr, "Error at mutex initialisation\n"); // imprime le problème à la stderr
         return 1;
     }
     if(sem_init(empty, 0 , slots_in_buffer) != 0) { // empty compte le nombre de slots vides dans un buffer, commence à [slots_in_buffer]
-        fprintf(stderr, "Error at semaphore initialisation - Returning error code\n"); // imprime le problème à la stderr
+        fprintf(stderr, "Error at semaphore initialisation\n"); // imprime le problème à la stderr
         return 1;
     }
     if(sem_init(full, 0 , 0) != 0) { // full compte le nombre de slots remplis dans un buffer, commence à 0
-        fprintf(stderr, "Error at semaphore initialisation - Returning error code\n"); // imprime le problème à la stderr
+        fprintf(stderr, "Error at semaphore initialisation\n"); // imprime le problème à la stderr
         return 1;
     }
 
     return 0; //successful
+}
+
+/**
+ * get_protected_variable : retourne la valeur de la variable donnée en parmètre après un accès protégé
+ *
+ * @variable : nom (string) de la variable à accéder
+ * @return : valeur de la variable accédée, quitte si erreur
+ */
+int get_protected_variable(char variable[])
+{
+    if(!strcmp(variable, "all_files_read")) { // si la variable à accéder est [all_files_read]
+        pthread_mutex_lock(&executing_states); // section critique
+        int to_return = all_files_read; // récupérer valeur de l'état
+        pthread_mutex_unlock(&executing_states); // fin de section critique
+        return to_return;
+    }
+    if(!strcmp(variable, "all_fractals_calculated")) { // si la variable à accéder est [all_fractals_calculated]
+        pthread_mutex_lock(&executing_states); // section critique
+        int to_return = all_fractals_calculated; // récupérer valeur de l'état
+        pthread_mutex_unlock(&executing_states); // fin de section critique
+        return to_return;
+    }
+    if(!strcmp(variable, "fractals_to_process")) { // si la variable à accéder est [fractals_to_process]
+        pthread_mutex_lock(&executing_states); // section critique
+        int to_return = fractals_to_process; // récupérer valeur de l'état
+        pthread_mutex_unlock(&executing_states); // fin de section critique
+        return to_return;
+    }
+    if(!strcmp(variable, "fractals_to_calculate")) { // si la variable à accéder est [fractals_to_calculate]
+        pthread_mutex_lock(&executing_states); // section critique
+        int to_return = fractals_to_calculate; // récupérer valeur de l'état
+        pthread_mutex_unlock(&executing_states); // fin de section critique
+        return to_return;
+    }
+
+    fprintf(stderr, "Trying to access unknown or untreated variable - Exiting from get_protected_variable\n"); // imprime le problème à la stderr
+    exit(EXIT_FAILURE);
 }

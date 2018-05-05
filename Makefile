@@ -1,4 +1,5 @@
 # code basé essentiellement de https://gl.developpez.com/tutoriel/outil/makefile/
+# TODO : compiler les tests
 
 # compilateur utilisé
 CC = gcc
@@ -29,7 +30,7 @@ libstack/libstack.a:
 
 main: $(OBJ) $(LIBRAIRIES)
 	@echo 'Making executable'
-	@$(CC) -o  gdb.c $@ $^ $(LDFLAGS) $(CFLAGS) $(LIBRAIRIES) # TODO enlever gdb.c
+	@$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS) $(LIBRAIRIES) # TODO utiliser gdb.c
 
 # pour main (et tout autre .c à construire à partir d'un .o)
 %.o: %.c
@@ -42,7 +43,7 @@ main: $(OBJ) $(LIBRAIRIES)
 # permet de supprimer tous les fichiers intermédiaires
 clean:
 	@echo 'Cleaning previously made files'
-	@rm -f $(EXEC) *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp #TODO quid si pas .bmp ??
+	@rm -vf $(EXEC) *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
 
 # supprime tout et reconstruit le projet
 rebuild: clean build
