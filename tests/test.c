@@ -49,6 +49,23 @@ void testComputeAndGetAverage(void){
     fractal_free(test);
 }
 
+
+void testPushAndPop(void){
+    node * nodes = malloc(sizeof(node));
+    struct fractal * test1 = fractal_new("fractal", 90, 10, 1, 0.6);
+    stack_push(&nodes, test1);
+    struct fractal * test2 = stack_pop(&nodes);
+    CU_ASSERT_EQUAL(fractal_get_name(test1), fractal_get_name(test2));
+    CU_ASSERT_EQUAL(fractal_get_height(test1), fractal_get_height(test2));
+    CU_ASSERT_EQUAL(fractal_get_width(test1), fractal_get_width(test2));
+    CU_ASSERT_EQUAL(fractal_get_b(test1), fractal_get_b(test2));
+    CU_ASSERT_EQUAL(test1, test2);
+    fractal_free(test1);
+    fractal_free(test2);
+    free(nodes);
+}
+
+
 int main(int argc, char const *argv[]) {
     CU_pSuite pSuite;
     if (CUE_SUCCESS != CU_initialize_registry()){
@@ -68,7 +85,8 @@ int main(int argc, char const *argv[]) {
             CU_add_test(pSuite, "test sur la hauteur", testGetWidth)==NULL ||
             CU_add_test(pSuite, "test sur a", testGetA)==NULL ||
             CU_add_test(pSuite, "test sur b", testGetB)==NULL ||
-            CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage)){
+            CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage) ||
+            CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)){
 
         CU_cleanup_registry();
         return CU_get_error();
