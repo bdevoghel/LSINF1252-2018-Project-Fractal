@@ -3,9 +3,45 @@
 #include "../libfractal/fractal.h"
 #include "../stack/stack.h"
 
+int main(int argc, char const *argv[]) {
+    CU_pSuite pSuite;
+    if (CUE_SUCCESS != CU_initialize_registry()){
+        return CU_get_error();
+    }
+    pSuite = NULL;
+    pSuite = CU_add_suite("Collection de tests sur les fractals", setup, teardown);
+    if (pSuite==NULL) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+
+    if (
+            CU_add_test(pSuite, "test sur le nom", testGetNames)==NULL ||
+            CU_add_test(pSuite, "test get/set value", testGetAndSetValue)==NULL ||
+            CU_add_test(pSuite, "test sur la largeur", testGetHeight)==NULL ||
+            CU_add_test(pSuite, "test sur la hauteur", testGetWidth)==NULL ||
+            CU_add_test(pSuite, "test sur a", testGetA)==NULL ||
+            CU_add_test(pSuite, "test sur b", testGetB)==NULL ||
+            CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage) ||
+            CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)){
+
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+
+    CU_basic_set_mode(CU_BRM_VERBOSE);
+    CU_basic_run_tests();
+    CU_basic_show_failures(CU_get_failure_list());
+    CU_cleanup_registry();
+
+
+    printf("\n THE END \n");
+    return 0;
+}
+
 void testGetNames(void) {
     struct fractal * test = fractal_new(NULL, 80, 40, 0.80, -0.8);
-    CU_ASSERT_STRING_EQUAL(name, fractal_get_name(test));
+    CU_ASSERT_STRING_EQUAL(NULL, fractal_get_name(test));
     fractal_free(test);
 }
 
@@ -63,41 +99,4 @@ void testPushAndPop(void){
     fractal_free(test1);
     fractal_free(test2);
     free(nodes);
-}
-
-
-int main(int argc, char const *argv[]) {
-    CU_pSuite pSuite;
-    if (CUE_SUCCESS != CU_initialize_registry()){
-        return CU_get_error();
-    }
-    pSuite = NULL;
-    pSuite = CU_add_suite("Collection de tests sur les fractals", setup, teardown);
-    if (pSuite==NULL) {
-        CU_cleanup_registry();
-        return CU_get_error();
-    }
-
-    if (
-            CU_add_test(pSuite, "test sur le nom", testGetNames)==NULL ||
-            CU_add_test(pSuite, "test get/set value", testGetAndSetValue)==NULL ||
-            CU_add_test(pSuite, "test sur la largeur", testGetHeight)==NULL ||
-            CU_add_test(pSuite, "test sur la hauteur", testGetWidth)==NULL ||
-            CU_add_test(pSuite, "test sur a", testGetA)==NULL ||
-            CU_add_test(pSuite, "test sur b", testGetB)==NULL ||
-            CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage) ||
-            CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)){
-
-        CU_cleanup_registry();
-        return CU_get_error();
-    }
-
-    CU_basic_set_mode(CU_BRM_VERBOSE);
-    CU_basic_run_tests();
-    CU_basic_show_failures(CU_get_failure_list());
-    CU_cleanup_registry();
-
-
-    printf("\n THE END \n");
-    return 0;
 }
