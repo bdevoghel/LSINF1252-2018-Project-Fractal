@@ -4,11 +4,11 @@
 #include "../libstack/stack.h"
 
 int main(int argc, char const *argv[]) {
-    CU_pSuite pSuite;
+
     if (CUE_SUCCESS != CU_initialize_registry()){
         return CU_get_error();
     }
-    pSuite = NULL;
+    CU_pSuite pSuite = NULL;
     pSuite = CU_add_suite("Collection de tests sur les fractals", setup, teardown);
     if (pSuite==NULL) {
         CU_cleanup_registry();
