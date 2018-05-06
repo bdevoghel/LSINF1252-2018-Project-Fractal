@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <CUnit/Basic.h>
 #include "../libfractal/fractal.h"
-#include "../stack/stack.h"
+#include "../libstack/stack.h"
 
 int main(int argc, char const *argv[]) {
     CU_pSuite pSuite;
@@ -87,7 +87,7 @@ void testComputeAndGetAverage(void){
 
 
 void testPushAndPop(void){
-    node * nodes = malloc(sizeof(node));
+    node_t * nodes = malloc(sizeof(node_t));
     struct fractal * test1 = fractal_new("fractal", 90, 10, 1, 0.6);
     stack_push(&nodes, test1);
     struct fractal * test2 = stack_pop(&nodes);

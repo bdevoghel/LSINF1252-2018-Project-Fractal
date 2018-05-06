@@ -13,7 +13,6 @@
 
 // TODO : insérer gitlog au répertoire à rendre
 // TODO : quid si appel d'aileurs ? comment imprimer là ?
-// TODO : error handeling sur sem_wait()
 
 /* VARIABLES GLOBALES */
 
@@ -163,60 +162,15 @@ int main(int argc, const char *argv[])
     pthread_mutex_unlock(&executing_states); // fin de section critique
     printf("Lecture des fichiers fini\n");
 
-    /*
-    // attendre que [toCompute_buffer] soit vidé
-    pthread_mutex_lock(&toCompute_mutex);
-    int length_toCompute = stack_length(toCompute_buffer);
-    pthread_mutex_unlock(&toCompute_mutex);
-    while(length_toCompute != 0) { // tant qu'il y a qqch dans toCompute_buffer
-        pthread_mutex_lock(&toCompute_mutex);
-        length_toCompute = stack_length(toCompute_buffer);
-        pthread_mutex_unlock(&toCompute_mutex);
-    }
-    // OU ALORS
-    int *sem_val_toCompute; // pointeur vers le nombre d'éléments dans le spmaphore
-    while(!sem_getvalue(&toCompute_full, sem_val_toCompute) && *sem_val_toCompute == slots_in_buffer); // attend tant qu'il y a des éléments dans [toCompute_buffer]
-    pthread_mutex_lock(&buffer_states);
-    toCompute_state = 1; // toCopmute_buffer a fini d'être utilisé
-    pthread_mutex_unlock(&buffer_states);
-    printf("Plus aucune fractale en attente de calcul\n");
-    */
-    printf("TEST 10\n");
-    // attendre que tous les threads de calcul aient fini de calculer toutes les fractales
-    for(int i = 0 ; i < maxthreads ; ++i) {
-        pthread_join(calculating_threads[i], NULL); // finir les threads de calcul, pas de valeur de retour attendue (attente sur pthread_join tant qu'un thread n'a pas retourné)
-    }
-    pthread_mutex_lock(&executing_states); // section critique
-    all_fractals_calculated = 1; // modifier l'état
-    pthread_mutex_unlock(&executing_states); // fin de section critique
-    printf("Calcul des fractales fini\n");
-
-    /*
-    // attendre que [computed_buffer] soit vidé
-    pthread_mutex_lock(&computed_mutex);
-    int length_computed = stack_length(computed_buffer);
-    pthread_mutex_unlock(&computed_mutex);
-    while(length_computed != 0) { // tant qu'il y a qqch dans computed_buffer
-        pthread_mutex_lock(&computed_mutex);
-        length_computed = stack_length(computed_buffer);
-        pthread_mutex_unlock(&computed_mutex);
-    }
-    // OU ALORS
-    int *sem_val_computed; // pointeur vers le nombre d'éléments dans le spmaphore
-    while(!sem_getvalue(&computed_full, sem_val_computed) && *sem_val_computed == slots_in_buffer); // attend tant qu'il y a des éléments dans [computed_buffer]
-    pthread_mutex_lock(&buffer_states);
-    computed_state = 1; // computed_buffer a fini d'être utilisé
-    pthread_mutex_unlock(&buffer_states);
-    printf("Plus aucune fractale en attente de sortie\n");
-    */
-    printf("TEST 11\n");
     // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
     pthread_join(printing_thread, NULL); // finir le thread de sortie, pas de valeur de retour attendue (attente sur pthread_join tant que le thread n'a pas retourné)
-    printf("TEST 12\n");
-    pthread_mutex_lock(&executing_states); // section critique
-    all_fractals_printed = 1; // modifier l'état
-    pthread_mutex_unlock(&executing_states); // fin de section critique
     printf("Sortie des fractales fini\n");
+
+    // annuler tous les threads de calcul aient fini de calculer toutes les fractales
+    for(int i = 0 ; i < maxthreads ; ++i) {
+        pthread_join(calculating_threads[i], NULL); // finir les threads de calcul // TODO cancel ou join ??
+    }
+    printf("Threads de calcul terminés\n");
 
     // libération de toutes les variables enregistrées
     stack_free(toCompute_buffer);
@@ -250,7 +204,7 @@ void *file_reader(char *file_to_read)
 
     // lecture des lignes du fichier
     char line[150]; // taille que peut avoir une ligne + marge
-    while(fgets(line, sizeof(line), file) != NULL) { // parcourt les lignes tant qu'elles existent
+    while(fgets(line, sizeof(line), file) != NULL) { // parcourt les lignes tant qu'elles existent //TODO fscanf !!!
         if(strlen(line) < 2 || line[0] == '\n') { // passe les lignes vides // TODO ne marche pas quid pour les lignes vides ?
             // rien faire
         } else if(line[0] == '#') { // affiche les commentaires
@@ -307,22 +261,15 @@ void *fractal_calculator()
     fractal_t *toCompute_fractal; // fractale à extraire du buffer et à calculer avant de la remettre dans un autre buffer
 
     // regarder s'il y a des fractales à calculer
-    /*pthread_mutex_lock(&buffer_states);
-    int finished = toCompute_state;
-    pthread_mutex_unlock(&buffer_states);
-    while(!finished) {*/
-    //int sem_value;
-    while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_calculate") > 0/*(!sem_getvalue(&toCompute_full, &sem_value) && sem_value > 0)*/) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
+    while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_calculate") > 0) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
 
         // décrémentation du nombre de fractales a calculer
         pthread_mutex_lock(&executing_states); // section critique
         fractals_to_calculate--; // décrémente la valeur
         pthread_mutex_unlock(&executing_states); // fin de section critique
 
-    printf("TEST 10\n");
         // extraire une fractale à calculer du [toCompute_buffer]
         sem_wait(&toCompute_full); // attente qu'un slot se remplisse
-    printf("TEST 11\n");
         pthread_mutex_lock(&toCompute_mutex); // section critique
         toCompute_fractal = stack_pop(&toCompute_buffer);
         if(toCompute_fractal == NULL) {
@@ -348,12 +295,6 @@ void *fractal_calculator()
         }
         pthread_mutex_unlock(&computed_mutex);    // fin de section critique
         sem_post(&computed_full); // un slot rempli de plus
-
-        /*// regarder s'il reste des fractales à calculer
-        pthread_mutex_lock(&buffer_states);
-        finished = toCompute_state;
-        pthread_mutex_unlock(&buffer_states);*/
-
     }
     printf("Sortie d'un thread de calcul\n");
     pthread_exit(NULL);
@@ -372,14 +313,10 @@ void *fractal_printer()
     node_t *highest_fractal_stack; // pile contenant la/les fractale(s) avec la plus haute valeur moyenne
     fractal_t *temp_highest_fractal; // fractale utilisé lors de la comparaison de moyennes
 
-    /*// regarder s'il y a des fractales à extraire
-    pthread_mutex_lock(&buffer_states);
-    int finished = computed_state;
-    pthread_mutex_unlock(&buffer_states);
-    while(!finished) { // tant qu'il y a des fractales à extraire */
+    // tant qu'il y a des fractales à extraire */
     while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_process") > 0) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
         // extraire une fractale calculée du [computed_buffer]
-        sem_wait(&computed_full); // attente qu'un slot se remplisse TODO problème ici quand -d n'est pas présent
+        sem_wait(&computed_full); // attente qu'un slot se remplisse
         pthread_mutex_lock(&computed_mutex); // section critique
         computed_fractal = stack_pop(&computed_buffer);
         if(computed_fractal == NULL) {
@@ -443,13 +380,7 @@ void *fractal_printer()
         pthread_mutex_lock(&executing_states); // section critique
         fractals_to_process--; // décrémente la valeur
         pthread_mutex_unlock(&executing_states); // fin de section critique
-
-        /*// regarder s'il reste des fractales à extraire
-        pthread_mutex_lock(&buffer_states);
-        finished = computed_state;
-        pthread_mutex_unlock(&buffer_states);*/
     }
-    printf("TEST 1\n");
 
     // sortie des/de la fractale(s) avec la plus grande moyenne
     fractal_t *highest_fractal = stack_pop(&highest_fractal_stack);
@@ -457,7 +388,8 @@ void *fractal_printer()
         fprintf(stderr, "Error at popping from stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
-    while(highest_fractal != NULL) {
+
+    while(highest_fractal != NULL) { // TODO meme nom de sortie ...
         printf("Création du fichier BMP avec la fractale ayant la plus grande valeur de moyenne : \"%s\"\n", fractal_get_name(highest_fractal));
         // ajouter .bmp au nom du fichier TODO sauf si .bmp déjà présent 
         char name_and_extention[68]; // contiendra nouveau nom 
@@ -470,12 +402,9 @@ void *fractal_printer()
         }
         fractal_free(highest_fractal);
         highest_fractal = stack_pop(&highest_fractal_stack);
-        printf("TEST 2\n");
     }
-    printf("TEST 3\n");
 
     stack_free(highest_fractal_stack);
-    printf("TEST 4\n");
 
     pthread_exit(NULL);
 } // void *fractal_printer()

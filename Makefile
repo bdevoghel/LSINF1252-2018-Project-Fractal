@@ -1,4 +1,4 @@
-# code basé essentiellement de https://gl.developpez.com/tutoriel/outil/makefile/
+# makefile basé essentiellement sur https://gl.developpez.com/tutoriel/outil/makefile/
 # TODO : compiler les tests
 
 # compilateur utilisé
@@ -6,7 +6,7 @@ CC = gcc
 # options de compilation
 CFLAGS = -g -Wall -W
 # options de l'édition de liens
-LDFLAGS = -lm -L/usr/local/lib -lSDL -lpthread
+LDFLAGS = -lm -L/usr/local/lib -lSDL -lpthread -lcunit
 # librairies externes à utiliser
 LIBRAIRIES = libfractal/libfractal.a libstack/libstack.a
 # liste des fichiers sources du projet
@@ -20,6 +20,14 @@ EXEC = main
 build: $(EXEC)
 lib : libfractal/libfractal.a
 
+tests: tests/tests.o $(LIBRAIRIES)
+	@echo 'Making tests'
+	@$(CC) -o tests tests/tests.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
+
+tests/tests.o: tests/*.c
+	@echo 'Building tests'
+	@$(CC) -c -o tests/tests.o tests/*.c $(CFLAGS)
+
 libfractal/libfractal.a:
 	@echo 'Building libfractal'
 	@cd libfractal && $(MAKE)
@@ -28,9 +36,9 @@ libstack/libstack.a:
 	@echo 'Building libstack'
 	@cd libstack && $(MAKE)
 
-main: $(OBJ) $(LIBRAIRIES)
+$(EXEC): $(OBJ) $(LIBRAIRIES)
 	@echo 'Making executable'
-	@$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS) $(LIBRAIRIES) # TODO utiliser gdb.c
+	@$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS) $(LIBRAIRIES)
 
 # pour main (et tout autre .c à construire à partir d'un .o)
 %.o: %.c
