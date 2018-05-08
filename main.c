@@ -261,16 +261,16 @@ void *fractal_calculator()
 {
     fractal_t *toCompute_fractal; // fractale à extraire du buffer et à calculer avant de la remettre dans un autre buffer
 
-    // regarder s'il y a des fractales à calculer
-    while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_calculate") > 0) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
+    while(1) { // tourne indéfinimant, jusqu'à ce que le thread soit annulé depuis la main
+
+        // extraire une fractale à calculer du [toCompute_buffer]
+        sem_wait(&toCompute_full); // attente qu'un slot se remplisse
 
         // décrémentation du nombre de fractales a calculer
         pthread_mutex_lock(&executing_states); // section critique
         fractals_to_calculate--; // décrémente la valeur
         pthread_mutex_unlock(&executing_states); // fin de section critique
 
-        // extraire une fractale à calculer du [toCompute_buffer]
-        sem_wait(&toCompute_full); // attente qu'un slot se remplisse
         pthread_mutex_lock(&toCompute_mutex); // section critique
         toCompute_fractal = stack_pop(&toCompute_buffer);
         if(toCompute_fractal == NULL) {
@@ -294,7 +294,7 @@ void *fractal_calculator()
             fprintf(stderr, "Error at pushing into stack - Exiting from fractal_calculator\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
         }
-        pthread_mutex_unlock(&computed_mutex);    // fin de section critique
+        pthread_mutex_unlock(&computed_mutex); // fin de section critique
         sem_post(&computed_full); // un slot rempli de plus
 
         // affiche la fractale si option -d est présente
@@ -311,8 +311,10 @@ void *fractal_calculator()
             printf("Fractale \"%s\" extraite en tant que fichier .bmp\n", name_and_extention);
         }
     }
-    printf("Sortie d'un thread de calcul\n");
-    pthread_exit(NULL);
+    /* SECTION JAMAIS ATTEINTE à cause de while(1) mais sinon :
+     * printf("Sortie d'un thread de calcul\n");
+     * pthread_exit(NULL);
+     */
 } // void *fractal_calculator()
 
 /**
@@ -377,7 +379,7 @@ void *fractal_printer()
                 }
             }
         }
-        // décrémentation du nombre de fractales a process
+        // décrémentation du nombre de fractales à process
         pthread_mutex_lock(&executing_states); // section critique
         fractals_to_process--; // décrémente la valeur
         pthread_mutex_unlock(&executing_states); // fin de section critique
