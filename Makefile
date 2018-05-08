@@ -1,10 +1,9 @@
 # makefile basé essentiellement sur https://gl.developpez.com/tutoriel/outil/makefile/
-# TODO : compiler les tests
 
 # compilateur utilisé
 CC = gcc
 # options de compilation
-CFLAGS = -g -Wall -W -std=c99
+CFLAGS = -g -Wall -W
 # options de l'édition de liens
 LDFLAGS = -lm -L/usr/local/lib -lSDL -lpthread -lcunit
 # librairies externes à utiliser
@@ -20,11 +19,12 @@ EXEC = main
 build: $(EXEC)
 lib : libfractal/libfractal.a
 
-tests: tests/tests.o $(LIBRAIRIES)
-	@echo 'Making tests'
-	@$(CC) -o tests tests/tests.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
+tests: tests/*.o $(LIBRAIRIES)
+	@echo 'Testing'
+	@$(CC) -o tests tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
+	@./tests
 
-tests/tests.o: tests/*.c
+tests/*.o: tests/*.c
 	@echo 'Building tests'
 	@$(CC) -c -o tests/tests.o tests/*.c $(CFLAGS)
 

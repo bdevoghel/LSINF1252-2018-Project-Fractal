@@ -51,7 +51,7 @@ void testComputeAndGetAverage(void){
 
 
 void testPushAndPop(void){
-    node_t * nodes = malloc(sizeof(node_t));
+    node_t *nodes;
     struct fractal * test1 = fractal_new("fractal", 90, 10, 1, 0.6);
     stack_push(&nodes, test1);
     struct fractal * test2 = stack_pop(&nodes);
@@ -62,10 +62,10 @@ void testPushAndPop(void){
     CU_ASSERT_EQUAL(test1, test2);
     fractal_free(test1);
     fractal_free(test2);
-    free(nodes);
+    stack_free(nodes);
 }
 
-int main(int argc, char const *argv[]) {
+int main() {
 
     if (CUE_SUCCESS != CU_initialize_registry()){
         return CU_get_error();
@@ -96,6 +96,6 @@ int main(int argc, char const *argv[]) {
     CU_cleanup_registry();
 
 
-    printf("\n THE END \n");
+    printf("\n Testing complete. \n\n");
     return 0;
 }

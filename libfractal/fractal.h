@@ -1,8 +1,8 @@
 #ifndef _FRACTAL_H
 #define _FRACTAL_H
 
-/*
- * TODO
+/**
+ * structure d'une fractale
  */
 typedef struct fractal {
     char *name; // chaine de char avec le nom de la fractale
