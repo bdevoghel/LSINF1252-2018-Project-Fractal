@@ -12,7 +12,6 @@
 #include "libfractal/fractal.h"
 
 // TODO : insérer gitlog au répertoire à rendre
-// TODO : négliger les fractales au nom doubles
 
 /* VARIABLES GLOBALES */
 
@@ -23,7 +22,7 @@ int maxthreads = 1; // nombre de threads de calcul maximal, 1 par défault (vale
 int files_to_read; // nombre de fichiers à lire pour extraire les infos des fractales
 char file_out[64]; // nom du fichier de sortie finale
 
-char *fractal_names; // vecteur contenant tous les noms des fractales déjà utilisées
+char *fractal_names = ""; // vecteur contenant tous les noms des fractales déjà utilisées
 
 // variables modifiables
 int mt_multiplier = 2; // facteur du nombre de slots dans un buffer (= mt_multiplier * maxthreads)
@@ -56,6 +55,8 @@ void *file_reader(); // pour un thread producteur du buffer toCompute_buffer
 void *fractal_calculator(); // pour un thread consommateur de computed_buffer et producteur de computed_buffer
 void *fractal_printer(); // pour le thread consommateur de computed_buffer
 int get_protected_variable(char variable[]); // retourne la valeur de la variable donnée en parmètre après un accès protégé
+int find_fractal_name(char *name); // retourne 1 si [name] se trouve déjà dans [fractal_names], 0 sinon
+int add_fractal_name(char *name); // ajoute [name] à la liste [fractal_names]
 
 
 /* FONCTIONS PRINCIPALES */
@@ -233,7 +234,7 @@ void *file_reader(char *file_to_read)
             fractal_t *new_fractal = fractal_new(name, width, height, a, b);
             if(new_fractal == NULL) { // si erreur à la création
                 fprintf(stderr, "Error at fractal creation (returning NULL) - Ignoring fractal \"%s %i %i %f %f\"\n", name, width, height, a, b); // imprime le problème à la stderr
-            } else if(find_fractal_name(name, fractal_names)) { // si duplicata
+            } else if(find_fractal_name(name)) { // si duplicata
                 fprintf(stderr, "Fractal with name \"%s\" already exists - Ignoring fractal \"%s %i %i %f %f\"\n", name, width, height, a, b); // imprime le problème à la stderr
             } else { // si pas d'erreur à la création
                 // ajout de la fractale dans [toCompute_buffer]
@@ -245,6 +246,12 @@ void *file_reader(char *file_to_read)
                 }
                 pthread_mutex_unlock(&toCompute_mutex); // fin de section critique
                 sem_post(&toCompute_full); // un slot rempli de plus
+
+                // ajoute le nom de la fractale à la liste des noms
+                if(add_fractal_name(name)) {
+                    fprintf(stderr, "Error in add_fractal_name - Exiting from file_reader\n"); // imprime le problème à la stderr
+                    exit(EXIT_FAILURE);
+                }
 
                 // incrémentation du nombre de fractales a process
                 pthread_mutex_lock(&executing_states); // section critique
@@ -286,8 +293,8 @@ void *fractal_calculator()
         // calculer les pixels de la fractale
         int i;
         int j;
-        for (i = 0; i < fractal_get_width(toCompute_fractal) ; ++i) { // parcourt les abscisses
-            for (j = 0; j < fractal_get_height(toCompute_fractal) ; ++j) { // parcourt les ordonnées
+        for(i = 0 ; i < fractal_get_width(toCompute_fractal) ; ++i) { // parcourt les abscisses
+            for(j = 0 ; j < fractal_get_height(toCompute_fractal) ; ++j) { // parcourt les ordonnées
                 fractal_compute_value(toCompute_fractal, i, j); // assigne la bonne valeur au pixel (i,j) TIME CONSUMING !
             }
         }
@@ -497,4 +504,47 @@ int get_protected_variable(char variable[])
 
     fprintf(stderr, "Trying to access unknown or untreated variable - Exiting from get_protected_variable\n"); // imprime le problème à la stderr
     exit(EXIT_FAILURE);
+}
+
+/**
+ * find_fractal_name : essaie de retrouver le string @name dans la liste de nom [fractal_names]
+ *
+ * @name : nom à retrouver dans la liste de noms de fractales
+ * @return : 0 si pas trouvé, 1 si trouvé
+ */
+int find_fractal_name(char *name)
+{
+    int i; // emplacement dans fractal_names
+    int j = 0; // emplacement dans name
+    int count = 0; // compte le nombre de caractères consécutifs identiques
+    for(i = 0 ; fractal_names[i] != '\0' ; ++i) { // tant qu'on est pas arrivé au bout du string
+        if(fractal_names[i] == name[j]) {
+            count++;
+            j++;
+        } else {
+            // remis à zéro
+            count = 0;
+            j = 0;
+        }
+        if(count == strlen(name) && fractal_names[i+1] == ' ') {
+            return 1; // trouvé
+        }
+    }
+    return 0; // pas trouvé
+}
+
+/**
+ * add_fractal_name : ajoute @name à la liste de nom [fracral_names] avec un espace derrière
+ *
+ * @name : nom à ajouté à la liste de noms de fractales
+ * @return : 0 si tout s'est bien passé, 1 sinon
+ */
+int add_fractal_name(const char *name)
+{
+    char new_string[strlen(fractal_names) + strlen(name) + 10]; // cré nouveau string
+    if(sprintf(new_string, "%s%s%c",fractal_names, name, ' ') < 0) { // concaténise et place un espace à la fin
+        return 1; // erreur avec sprintf
+    }
+    fractal_names = new_string; // nouveau string de nom de fractales
+    return 0; // exécuté correctement
 }
