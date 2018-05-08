@@ -4,7 +4,7 @@
 # compilateur utilisé
 CC = gcc
 # options de compilation
-CFLAGS = -g -Wall -W
+CFLAGS = -g -Wall -W -std=c99
 # options de l'édition de liens
 LDFLAGS = -lm -L/usr/local/lib -lSDL -lpthread -lcunit
 # librairies externes à utiliser
