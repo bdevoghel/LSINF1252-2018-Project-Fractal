@@ -13,7 +13,6 @@
 
 // TODO : insérer gitlog au répertoire à rendre
 // TODO : quid si appel d'aileurs ? comment imprimer là ?
-// TODO : imprimer que une fractale à la plus haute muyenne
 // TODO : négliger les fractales au nom doubles
 
 /* VARIABLES GLOBALES */
@@ -310,7 +309,7 @@ void *fractal_calculator()
             sprintf(name_and_extention, "%s.bmp", fractal_get_name(toCompute_fractal));
 
             // sortie de la fractale
-            if(write_bitmap_sdl(computed_fractal, name_and_extention)) {
+            if(write_bitmap_sdl(toCompute_fractal, name_and_extention)) {
                 fprintf(stderr, "Error at bitmap writing - Exiting from fractal_calculator\n"); // imprime le problème à la stderr
                 exit(EXIT_FAILURE);
             }
@@ -333,8 +332,7 @@ void *fractal_calculator()
 void *fractal_printer()
 {
     fractal_t *computed_fractal; // fractale à extraire du buffer et à analyser
-    node_t *highest_fractal_stack; // pile contenant la/les fractale(s) avec la plus haute valeur moyenne
-    fractal_t *temp_highest_fractal; // fractale utilisé lors de la comparaison de moyennes
+    fractal_t *temp_highest_fractal; // fractale ayant pour le moment la plus haute moyenne
 
     // tant qu'il y a des fractales à extraire */
     while(!get_protected_variable("all_files_read") || get_protected_variable("fractals_to_process") > 0) { // attente qu'un slot se remplisse tant qu'on attend des éléments dans [toCompute_buffer]
@@ -351,69 +349,36 @@ void *fractal_printer()
 
         // calculer la moyenne et garder les plus grandes
         fractal_compute_average(computed_fractal);
-        if(highest_fractal_stack == NULL) {
-            if(stack_push(&highest_fractal_stack, computed_fractal)) {
-                fprintf(stderr, "Error at pushing into stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-                exit(EXIT_FAILURE);
-            }
+        if(temp_highest_fractal == NULL) { // si la fractale ayant la plus haute moyenne n'existe pas encore
+            temp_highest_fractal = computed_fractal;
+        } else if(fractal_get_average(temp_highest_fractal) > fractal_get_average(computed_fractal)) {
+            fractal_free(computed_fractal);
+        } else if(fractal_get_average(temp_highest_fractal) < fractal_get_average(computed_fractal)) {
+            fractal_free(temp_highest_fractal);
+            temp_highest_fractal = computed_fractal;
         } else {
-            temp_highest_fractal = stack_pop(&highest_fractal_stack); // retire la fractale à la plus haute moyenne de la pile
-            if(temp_highest_fractal == NULL) {
-                fprintf(stderr, "Error at popping from stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-                exit(EXIT_FAILURE);
-            }
-            if(fractal_get_average(temp_highest_fractal) > fractal_get_average(computed_fractal)) {
-                if(stack_push(&highest_fractal_stack, temp_highest_fractal)) { // remet à sa place
-                    fprintf(stderr, "Error at pushing into stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-                    exit(EXIT_FAILURE);
-                }
-                fractal_free(computed_fractal);
-            } else if(fractal_get_average(temp_highest_fractal) == fractal_get_average(computed_fractal)) { // si même moyenne
-                if(stack_push(&highest_fractal_stack, temp_highest_fractal)) { // remet à sa place ...
-                    fprintf(stderr, "Error at pushing into stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-                    exit(EXIT_FAILURE);
-                }
-                if(stack_push(&highest_fractal_stack, computed_fractal)) { // ... et ajoute le nouveau qui a la même moyenne
-                    fprintf(stderr, "Error at pushing into stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                stack_free(highest_fractal_stack); // libère tous les anciens meilleurs
-                if(stack_push(&highest_fractal_stack, computed_fractal)) { // met le nouveau meilleur sur la pile
-                    fprintf(stderr, "Error at pushing into stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-                    exit(EXIT_FAILURE);
-                }
-            }
+            printf("La fractale \"%s\" a la même moyenne que la fractale \"%s\". La première des deux est gardée.", fractal_get_name(temp_highest_fractal), fractal_get_name(computed_fractal));
+            fractal_free(computed_fractal);
         }
+
         // décrémentation du nombre de fractales à process
         pthread_mutex_lock(&executing_states); // section critique
         fractals_to_process--; // décrémente la valeur
         pthread_mutex_unlock(&executing_states); // fin de section critique
     }
 
-    // sortie des/de la fractale(s) avec la plus grande moyenne
-    fractal_t *highest_fractal = stack_pop(&highest_fractal_stack);
-    if(highest_fractal == NULL) {
-        fprintf(stderr, "Error at popping from stack - Exiting from fractal_printer\n"); // imprime le problème à la stderr
+    // sortie de la fractale avec la plus grande moyenne
+    printf("Création du fichier .bmp avec la fractale ayant la plus grande moyenne : \"%s\"\n", fractal_get_name(highest_fractal));
+
+    // ajouter .bmp au nom du fichier TODO sauf si .bmp déjà présent
+    char name_and_extention[68]; // contiendra nouveau nom
+    sprintf(name_and_extention, "%s.bmp", file_out);
+
+    // sortie de la fractale
+    if(write_bitmap_sdl(temp_highest_fractal, name_and_extention)) {
+        fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
-
-    while(highest_fractal != NULL) { // TODO meme nom de sortie ...
-        printf("Création du fichier BMP avec la fractale ayant la plus grande valeur de moyenne : \"%s\"\n", fractal_get_name(highest_fractal));
-        // ajouter .bmp au nom du fichier TODO sauf si .bmp déjà présent 
-        char name_and_extention[68]; // contiendra nouveau nom 
-        sprintf(name_and_extention, "%s.bmp", file_out);
-
-        // sortie de la fractale
-        if(write_bitmap_sdl(highest_fractal, name_and_extention)) {
-            fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-            exit(EXIT_FAILURE);
-        }
-        fractal_free(highest_fractal);
-        highest_fractal = stack_pop(&highest_fractal_stack);
-    }
-
-    stack_free(highest_fractal_stack);
 
     pthread_exit(NULL);
 } // void *fractal_printer()
