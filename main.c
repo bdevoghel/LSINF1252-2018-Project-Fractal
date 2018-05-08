@@ -111,7 +111,8 @@ int main(int argc, const char *argv[])
     printf("Lancement des threads de lecture des fichiers\n");
     pthread_t reader_threads[files_to_read]; // vecteur contenant les threads de lecture de fichiers
     int j = 0; // emplacement dans [reader_threads]
-    for(int i = 1 ; i<argc-1 ; ++i) { // parcourt tous les arguments sauf premier ("main") et dernier ("fichierOut")
+    int i;
+    for(i = 1 ; i<argc-1 ; ++i) { // parcourt tous les arguments sauf premier ("main") et dernier ("fichierOut")
         if(!strcmp(argv[i], "--maxthreads") || !strcmp(argv[i], "-d")) { // si option
             if(!strcmp(argv[i], "--maxthreads")) {
                 ++i; // passe l'argument de l'option maxthread
@@ -137,13 +138,14 @@ int main(int argc, const char *argv[])
     // lancement des threads de calcul
     printf("Lancement des threads de calcul des fractales\n");
     pthread_t calculating_threads[maxthreads]; // vecteur contenant les threads de calcul
-    for(int j = 0 ; j < maxthreads ; ++j) {
+    int k;
+    for(k = 0 ; k < maxthreads ; ++k) {
         pthread_t new_thread; // création d'un nouveau thread de calcul
         if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             fprintf(stderr, "Error at \"fractal_calculator\" thread creation - Exiting main\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
         }
-        calculating_threads[j] = new_thread; // nouveau thread mis dans le vecteur des calculateurs
+        calculating_threads[k] = new_thread; // nouveau thread mis dans le vecteur des calculateurs
     } // threads de calcul lancés et stockés dans [calculating_threads]
 
     // lancement du thread de sortie
@@ -156,8 +158,9 @@ int main(int argc, const char *argv[])
     /* ATTENTE DE L'AVENCÉE DES THREADS */
 
     // attendre que tous les threads de lecture aient fini de lire tous les fichiers
-    for(int i = 0 ; i < files_to_read ; ++i) {
-        pthread_join(reader_threads[i], NULL); // finir les threads de lecture, pas de valeur de retour attendue (attente sur pthread_join tant qu'un thread n'a pas retourné)
+    int l;
+    for(l = 0 ; l < files_to_read ; ++l) {
+        pthread_join(reader_threads[l], NULL); // finir les threads de lecture, pas de valeur de retour attendue (attente sur pthread_join tant qu'un thread n'a pas retourné)
     }
     pthread_mutex_lock(&executing_states); // section critique
     all_files_read = 1; // modifier l'état
@@ -169,8 +172,9 @@ int main(int argc, const char *argv[])
     printf("Sortie des fractales fini\n");
 
     // annuler tous les threads de calcul
-    for(int i = 0 ; i < maxthreads ; ++i) {
-        pthread_join(calculating_threads[i], NULL); // finir les threads de calcul et terminer leur utilisation // TODO cancel ou join ??
+    int m;
+    for(m = 0 ; m < maxthreads ; ++m) {
+        pthread_join(calculating_threads[m], NULL); // finir les threads de calcul et terminer leur utilisation // TODO cancel ou join ??
     }
     printf("Threads de calcul terminés\n");
 
@@ -281,8 +285,10 @@ void *fractal_calculator()
         sem_post(&toCompute_empty); // un slot libre en plus
 
         // calculer les pixels de la fractale
-        for (int i = 0; i < fractal_get_width(toCompute_fractal) ; ++i) { // parcourt les abscisses
-            for (int j = 0; j < fractal_get_height(toCompute_fractal) ; ++j) { // parcourt les ordonnées
+        int i;
+        int j;
+        for (i = 0; i < fractal_get_width(toCompute_fractal) ; ++i) { // parcourt les abscisses
+            for (j = 0; j < fractal_get_height(toCompute_fractal) ; ++j) { // parcourt les ordonnées
                 fractal_compute_value(toCompute_fractal, i, j); // assigne la bonne valeur au pixel (i,j) TIME CONSUMING !
             }
         }
