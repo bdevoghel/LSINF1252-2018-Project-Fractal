@@ -12,10 +12,10 @@
 #include "libfractal/fractal.h"
 
 // TODO : insérer gitlog au répertoire à rendre
-// TODO : lecture de fichiers multiple
 // TODO : executing tests
-// TODO : nom multiple fractales en sortie
 // TODO : no quit in subfunction
+// TODO : ligne vide en tant que première ligne
+// TODO : valgrind
 
 /* VARIABLES GLOBALES */
 
@@ -58,7 +58,7 @@ int fractals_to_process = 0;
 
 void process_options(); // pour l'initialsiation des options
 int initialise_buffer_protection(); // pour initiasliser les mutex et semaphores d'un buffer
-void *file_reader(); // pour un thread producteur du buffer toCompute_buffer
+void *file_reader(void *file_to_read); // pour un thread producteur du buffer toCompute_buffer
 void *fractal_calculator(); // pour un thread consommateur de computed_buffer et producteur de computed_buffer
 void *fractal_printer(); // pour le thread consommateur de computed_buffer
 int get_protected_variable(char variable[]); // retourne la valeur de la variable donnée en parmètre après un accès protégé
@@ -130,14 +130,9 @@ int main(int argc, const char *argv[])
             }
             // ne rien faire
         } else { // si fichier à lire
-            char file_name[100];
-            if(!strcmp(argv[i], "-")) { // fichier à lire est l'entrée std
-                printf("BESOIN D'UTILISER STD_IN\n"); // TODO : lecture de l'entrée std
-            } else { // fichier à lire est un fichier normal
-                strcpy(file_name, argv[i]);
-            }
+
             pthread_t new_thread; // création d'un nouveau thread
-            if(pthread_create(&new_thread, NULL, file_reader, (void *) file_name)) { // initialisation du thread lecteur de fichier
+            if(pthread_create(&new_thread, NULL, file_reader, (void *) argv[i])) { // initialisation du thread lecteur de fichier
                 fprintf(stderr, "Error at \"file_reader\" thread creation - Exiting main\n"); // imprime le problème à la stderr
                 exit(EXIT_FAILURE);
             }
@@ -224,8 +219,54 @@ int main(int argc, const char *argv[])
  *
  * @file_to_read : nom du fichier à lire
  */
-void *file_reader(char *file_to_read)
+void *file_reader(void *file_name)
 {
+    if(!strcmp(file_name, "-")) { // si fichier à lire est l'entrée std
+        /*
+        FILE *input =  fopen(STDIN_FILE, "w+");
+
+        char buffer[150];
+
+        int do_stop = 0;
+        while(!do_stop){
+            printf("%s\n", "Enter fractal formatted as follow: [name width height a b]" );
+            fgets(buffer, sizeof(buffer), stdin);
+            int r = fputs(buffer,userInput);
+            if (r<0) {
+                printf("%s %s\n","Failed to print fractal in temporary file", STDIN_FILE);
+            }
+            printf("%s","Do you want to enter another fractal? Y/N :");
+            fgets(buffer, sizeof(buffer), stdin);
+
+            if(buffer[0]=='N'||buffer[0]=='n'){
+                do_stop = 1;
+            }
+        }
+        fflush(userInput); //push everything to memory
+        close(userInput); //close stream before accessing it
+        */
+
+        printf("\nPlease enter the fractals as following : [name width height a b]\n When you finished, press ctrl+d\n");
+
+        FILE *file =  fopen(user_stdin.txt, "w+"); // crée nouveau fichier temporaire où mettre les input de l'utilisateur
+        char buffer[150]; // buffer entre stdin et fichier
+
+        while(fgets(buffer, sizeof(buffer), stdin) != NULL) { // tant que qqch peut être lu de stdin, met le contenu d'une ligne dans le buffer
+            if(fputs(buffer, file) < 0) { // met la ligne de l'utilisateur dans le fichier temporaire, entre dans if si problème
+                fprintf(stderr, "Failed put user input in temporary file - Exiting from file_reader\n"); // imprime le problème à la stderr
+                exit(EXIT_FAILURE);
+            }
+            if(buffer[0]=='^D'){ // tant que l'utilisateur veut continuer
+                break;
+            }
+        }
+        fflush(file); // s'assurer que tout soit bien ajouté au fichier temporaire
+        close(file); // ferme fichier temporaire
+
+        char *file_to_read = user_stdin.txt; // assigner le fichier à lire
+    } else { // si fichier à lire est un fichier normal
+        char *file_to_read = (char *) file_name;
+    }
     printf("Lecture du fichier \"%s\"\n", file_to_read);
 
     // variables utilisées pour les fractales
@@ -578,7 +619,6 @@ int get_protected_variable(char variable[])
  */
 int find_fractal_name(char *name)
 {
-    printf("Finding %s in %s", name, fractal_names); // TODO suppr
     int i; // emplacement dans fractal_names
     int j = 0; // emplacement dans name
     int count = 0; // compte le nombre de caractères consécutifs identiques
@@ -592,11 +632,9 @@ int find_fractal_name(char *name)
             j = 0;
         }
         if(count == (int)strlen(name) && fractal_names[i+1] == ' ') {
-            printf("Fractale %s déjà ajoutée - Ignorée\n", name);
             return 1; // trouvé
         }
     }
-    printf("NOT FOUND"); // TODO suppr
     return 0; // pas trouvé
 }
 
@@ -608,8 +646,6 @@ int find_fractal_name(char *name)
  */
 int add_fractal_name(const char *name)
 {
-    printf("Adding %s to %s", name, fractal_names); // TODO suppr
-
     char *new_string = (char *) malloc(sizeof(char) * (strlen(fractal_names) + strlen(name) + 1)); // crée nouveau string
     if(new_string == NULL) {
         return 1; // erreur avec malloc
@@ -621,7 +657,6 @@ int add_fractal_name(const char *name)
     }
     free(fractal_names); // libère l'ancien string des nom des fractales
     fractal_names = new_string; // nouveau string de nom de fractales
-    printf(fractal_names); // TODO suppr
     return 0; // exécuté correctement
 }
 

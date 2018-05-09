@@ -19,15 +19,19 @@ EXEC = main
 build: $(EXEC)
 lib : libfractal/libfractal.a
 
-tests: tests/*.o $(LIBRAIRIES)
-	@echo 'Testing'
-	@$(CC) -o tests/tests tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
-	./tests/tests
-	@echo 'Tests complete'
+tests:
+    @echo 'Testing'
+    @rm -vf tests/test tests/*.o
+    @tests/test
+    ./tests/test
+   	@echo 'Tests complete'
+
+tests/test: tests/*.o $(LIBRAIRIES)
+	@$(CC) -o tests/test tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
 
 tests/*.o: tests/*.c
 	@echo 'Building tests'
-	@$(CC) -c -o tests/tests.o tests/*.c $(CFLAGS)
+	@$(CC) -c -o tests/test.o tests/*.c $(CFLAGS)
 
 libfractal/libfractal.a:
 	@echo 'Building libfractal'
@@ -52,7 +56,7 @@ $(EXEC): $(OBJ) $(LIBRAIRIES)
 # permet de supprimer tous les fichiers intermédiaires
 clean:
 	@echo 'Cleaning previously made files'
-	@rm -vf $(EXEC) tests/tests tests/*.o *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
+	@rm -vf $(EXEC) tests/test tests/*.o *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
 
 # supprime tout et reconstruit le projet
 rebuild: clean build
