@@ -21,8 +21,8 @@ lib : libfractal/libfractal.a
 
 tests: tests/*.o $(LIBRAIRIES)
 	@echo 'Testing'
-	@$(CC) -o tests tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
-	@./tests
+	@$(CC) -o tests/tests tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
+	@./tests/tests
 
 tests/*.o: tests/*.c
 	@echo 'Building tests'
