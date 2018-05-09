@@ -7,7 +7,7 @@ void testGetNames(void) {
     struct fractal * test = fractal_new("fractal", 80, 40, 0.80, -0.8);
     CU_ASSERT_STRING_EQUAL("fractal", fractal_get_name(test));
     fractal_free(test);
-}
+     }
 
 void testGetAndSetValue(void) {
     struct fractal * test = fractal_new("fractal", 80, 40, 0.80, -0.8);
@@ -65,16 +65,43 @@ void testPushAndPop(void){
     stack_free(nodes);
 }
 
+static FILE* temp_file = NULL;
+
+int init_suite(void)
+{
+   if (NULL == (temp_file = fopen("temp.txt", "w+"))) {
+      return -1;
+   }
+   else {
+      return 0;
+   }
+}
+
+int clean_suite(void)
+{
+   if (0 != fclose(temp_file)) {
+      return -1;
+   }
+   else {
+      temp_file = NULL;
+      return 0;
+   }
+}
+
 int main() {
+
+  CU_pSuite pSuite = NULL;
 
     if (CUE_SUCCESS != CU_initialize_registry()){
         return CU_get_error();
     }
-    CU_pSuite pSuite = NULL;
-    if (pSuite==NULL) {
+
+    pSuite = CU_add_suite("liste_de_test", init_suite, clean_suite);    
+
+     if (pSuite==NULL) {
         CU_cleanup_registry();
         return CU_get_error();
-    }
+     }
 
     if (
             CU_add_test(pSuite, "test sur le nom", testGetNames)==NULL ||
