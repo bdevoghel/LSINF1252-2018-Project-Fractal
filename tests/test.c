@@ -18,7 +18,7 @@ void testGetAndSetValue(void) {
 }
 
 void testGetHeight(void) {
-    struct fractal * test = fractal_new("fractal", -100, 80, 0.8, -0.8);
+    struct fractal * test = fractal_new("fractal", 100, 80, 0.8, -0.8);
     CU_ASSERT_EQUAL(80, fractal_get_height(test));
     fractal_free(test);
 }
@@ -59,7 +59,8 @@ void testPushAndPop(void){
     CU_ASSERT_EQUAL(fractal_get_height(test1), fractal_get_height(test2));
     CU_ASSERT_EQUAL(fractal_get_width(test1), fractal_get_width(test2));
     CU_ASSERT_EQUAL(fractal_get_b(test1), fractal_get_b(test2));
-    CU_ASSERT_EQUAL(test1, test2);
+    CU_ASSERT_EQUAL(fractal_get_a(test1), fractal_get_a(test2));
+    //CU_ASSERT_EQUAL(test1, test2);
     fractal_free(test1);
     fractal_free(test2);
     stack_free(nodes);
@@ -104,14 +105,15 @@ int main() {
      }
 
     if (
-            CU_add_test(pSuite, "test sur le nom", testGetNames)==NULL ||
-            CU_add_test(pSuite, "test get/set value", testGetAndSetValue)==NULL ||
-            CU_add_test(pSuite, "test sur la largeur", testGetHeight)==NULL ||
-            CU_add_test(pSuite, "test sur la hauteur", testGetWidth)==NULL ||
-            CU_add_test(pSuite, "test sur a", testGetA)==NULL ||
-            CU_add_test(pSuite, "test sur b", testGetB)==NULL ||
-            CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage) ||
-            CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)){
+	NULL==CU_add_test(pSuite, "test sur le nom", testGetNames)|| 
+	NULL==CU_add_test(pSuite, "test get/set value", testGetAndSetValue)||
+	NULL==CU_add_test(pSuite, "test sur la largeur", testGetHeight)||
+	NULL==CU_add_test(pSuite, "test sur la hauteur", testGetWidth)||
+	NULL==CU_add_test(pSuite, "test sur a", testGetA)||
+	NULL==CU_add_test(pSuite, "test sur b", testGetB)||
+	NULL==CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage)||
+        NULL==CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)
+	){
 
         CU_cleanup_registry();
         fprintf(stderr, "Testing ended with error.\n");
