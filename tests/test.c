@@ -45,25 +45,39 @@ void testComputeAndGetAverage(void){
     struct fractal * test = fractal_new("fractal", 100, 50, 0.75, -0.7);
     fractal_compute_average(test);
     double moyenne = 2.221400;
-    CU_ASSERT_EQUAL(moyenne,fractal_get_average(test));
+    CU_ASSERT_DOUBLE_EQUAL(moyenne,fractal_get_average(test),6);
     fractal_free(test);
 }
 
 
 void testPushAndPop(void){
-    node_t *nodes;
-    struct fractal * test1 = fractal_new("fractal", 90, 10, 1, 0.6);
-    stack_push(&nodes, test1);
+  node_t * nodes;
+    struct fractal * test1 = fractal_new("fractal", 100, 50, 0.75, -0.7);
+    stack_push(&nodes, fractal_new("fractal", 100, 50, 0.75, -0.7));
     struct fractal * test2 = stack_pop(&nodes);
-    CU_ASSERT_EQUAL(fractal_get_name(test1), fractal_get_name(test2));
-    CU_ASSERT_EQUAL(fractal_get_height(test1), fractal_get_height(test2));
-    CU_ASSERT_EQUAL(fractal_get_width(test1), fractal_get_width(test2));
-    CU_ASSERT_EQUAL(fractal_get_b(test1), fractal_get_b(test2));
-    CU_ASSERT_EQUAL(fractal_get_a(test1), fractal_get_a(test2));
-    //CU_ASSERT_EQUAL(test1, test2);
+ CU_ASSERT_STRING_EQUAL(fractal_get_name(test1), fractal_get_name(test2));
+ CU_ASSERT_EQUAL(fractal_get_height(test1), fractal_get_height(test2));
+ CU_ASSERT_EQUAL(fractal_get_width(test1), fractal_get_width(test2));
+ CU_ASSERT_EQUAL(fractal_get_b(test1), fractal_get_b(test2));
+ CU_ASSERT_EQUAL(fractal_get_a(test1), fractal_get_a(test2));
     fractal_free(test1);
     fractal_free(test2);
-    stack_free(nodes);
+    //stack_free(nodes);
+    }
+
+void testlength (void){
+  node_t * nodes = NULL;
+    CU_ASSERT_EQUAL(0, stack_length(nodes));
+    stack_push(&nodes, fractal_new("fractal1", 100, 50, 0.75, -0.7));
+    CU_ASSERT_EQUAL(1, stack_length(nodes));
+    stack_push(&nodes, fractal_new("fractal2", 100, 50, 0.75, -0.7));
+    CU_ASSERT_EQUAL(2, stack_length(nodes));
+    struct fractal * test2 = stack_pop(&nodes);
+    CU_ASSERT_EQUAL(1, stack_length(nodes));
+    struct fractal * test1 = stack_pop(&nodes);
+    CU_ASSERT_EQUAL(0, stack_length(nodes));
+    fractal_free(test1);
+    fractal_free(test2);
 }
 
 static FILE* temp_file = NULL;
@@ -112,7 +126,8 @@ int main() {
 	NULL==CU_add_test(pSuite, "test sur a", testGetA)||
 	NULL==CU_add_test(pSuite, "test sur b", testGetB)||
 	NULL==CU_add_test(pSuite, "test sur compute/get de la moyenne", testComputeAndGetAverage)||
-        NULL==CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)
+	NULL==CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)||
+	NULL==CU_add_test(pSuite, "test length", testlength)
 	){
 
         CU_cleanup_registry();
