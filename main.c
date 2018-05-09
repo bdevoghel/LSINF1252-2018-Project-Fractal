@@ -210,11 +210,13 @@ void *file_reader(char *file_to_read)
     // variables utilisées pour les fractales
     double a, b;
     int width, height;
+    char *name = (char *)malloc(sizeof(char)*64); // alloue de la place pour le nom de la fractale à lire, malloc nécessaire car scope sur plusieurs fonctions
 
     // ouverture du fichier
     FILE *file = fopen(file_to_read, "r");
     if(file == NULL) {
         fprintf(stderr, "Error at file \"%s\" opening - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
+        free(name); // libère la ressource
         exit(EXIT_FAILURE);
     }
 
@@ -243,7 +245,9 @@ void *file_reader(char *file_to_read)
             if (line[0] == '#') { // si commentaire
                 printf("Commentaire dans le fichier %s : %s", file_to_read, line); // affiche le commentaire
             } else {
-                sscanf(line, "%s %i %i %f %f", name, &width, &height, &a, &b); // parsing en les bonnes valeurs
+                printf("Ajout de la fractale suivante à la pile : %s", line); //TODO \n ?
+
+                sscanf(line, "%s %i %i %lf %lf", name, &width, &height, &a, &b); // parsing en les bonnes valeurs
 
                 // création de la fractale
                 fractal_t *new_fractal = fractal_new(name, width, height, a, b);
@@ -263,12 +267,14 @@ void *file_reader(char *file_to_read)
                     if (stack_push(&toCompute_buffer, new_fractal)) { // ajout à la pile
                         fprintf(stderr,
                                 "Error at pushing into stack - Exiting from file_reader\n"); // imprime le problème à la stderr
+                        free(name); // libère la ressource
                         exit(EXIT_FAILURE);
                     }
                     // ajoute le nom de la fractale à la liste des noms
                     if (add_fractal_name(name)) {
                         fprintf(stderr,
                                 "Error in add_fractal_name - Exiting from file_reader\n"); // imprime le problème à la stderr
+                        free(name); // libère la ressource
                         exit(EXIT_FAILURE);
                     }
                     pthread_mutex_unlock(&toCompute_mutex); // fin de section critique
@@ -282,10 +288,14 @@ void *file_reader(char *file_to_read)
             }
         } else {
             fprintf(stderr, "Error at file \"%s\" scaning - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
+            free(name); // libère la ressource
             exit(EXIT_FAILURE);
         }
         scaned = fscanf(file, "%[^\n]\n", line); // scan la ligne suivante
     }
+    free(name); // libère la ressource
+
+    printf("Fini de lire le ficheir \"%s\"\n", file_to_read);
 
     if(fclose(file)) { // fermer le document ouvert
         fprintf(stderr, "Error at file \"%s\" closing - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr

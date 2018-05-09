@@ -22,7 +22,7 @@ lib : libfractal/libfractal.a
 tests: tests/*.o $(LIBRAIRIES)
 	@echo 'Testing'
 	@$(CC) -o tests/tests tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
-	@./tests/tests
+	./tests/tests
 
 tests/*.o: tests/*.c
 	@echo 'Building tests'
@@ -47,7 +47,7 @@ $(EXEC): $(OBJ) $(LIBRAIRIES)
 
 # dépendances qui seront systématiquement reconstruites
 .PHONY: build clean rebuild
-	
+
 # permet de supprimer tous les fichiers intermédiaires
 clean:
 	@echo 'Cleaning previously made files'
