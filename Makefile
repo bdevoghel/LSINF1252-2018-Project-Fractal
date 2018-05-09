@@ -47,12 +47,12 @@ $(EXEC): $(OBJ) $(LIBRAIRIES)
 	@$(CC) -o $@ -c $< $(CFLAGS)
 
 # dépendances qui seront systématiquement reconstruites
-.PHONY: build clean rebuild
+.PHONY: build clean rebuild tests
 
 # permet de supprimer tous les fichiers intermédiaires
 clean:
 	@echo 'Cleaning previously made files'
-	@rm -vf $(EXEC) *.o tests/*.o tests/tests libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
+	@rm -vf $(EXEC) tests/tests tests/*.o *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
 
 # supprime tout et reconstruit le projet
 rebuild: clean build

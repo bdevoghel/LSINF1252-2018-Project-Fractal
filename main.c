@@ -28,7 +28,7 @@ char file_out[64]; // nom du fichier de sortie finale
 
 int at_least_one_fractal = 0; // passera à 1 si au moins une fractale a été lue
 
-char *fractal_names = ""; // vecteur contenant tous les noms des fractales déjà utilisées
+char *fractal_names; // vecteur contenant tous les noms des fractales déjà utilisées
 
 // variables modifiables
 int mt_multiplier = 2; // facteur du nombre de slots dans un buffer (= mt_multiplier * maxthreads)
@@ -105,6 +105,13 @@ int main(int argc, const char *argv[])
     }
     if(pthread_mutex_init(&fractal_names_mutex, NULL) != 0) { // initialisation du mutex sur les états de l'exécution du programme
         fprintf(stderr, "Error at \"fractal_names_mutex\" mutex initialisation - Exiting main\n"); // imprime le problème à la stderr
+        exit(EXIT_FAILURE);
+    }
+
+    // initialisation de la mémoire des noms des fractales déjà traités
+    fractal_names = (char *)malloc(sizeof(char));
+    if(fractal_names == NULL) {
+        fprintf(stderr, "Error at malloc - Exiting main\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
 
@@ -225,6 +232,10 @@ void *file_reader(char *file_to_read)
     double a, b;
     int width, height;
     char *name = (char *)malloc(sizeof(char)*64); // alloue de la place pour le nom de la fractale à lire, malloc nécessaire car scope sur plusieurs fonctions
+    if(name == NULL) {
+        fprintf(stderr, "Error at malloc - Exiting from file_reader\n"); // imprime le problème à la stderr
+        exit(EXIT_FAILURE);
+    }
 
     // ouverture du fichier
     FILE *file = fopen(file_to_read, "r");
@@ -599,10 +610,16 @@ int add_fractal_name(const char *name)
 {
     printf("Adding %s to %s", name, fractal_names); // TODO suppr
 
-    char new_string[strlen(fractal_names) + strlen(name) + 10]; // cré nouveau string
-    if(sprintf(new_string, "%s%s%c",fractal_names, name, ' ') < 0) { // concaténise et place un espace à la fin
+    char *new_string = (char *) malloc(sizeof(char) * (strlen(fractal_names) + strlen(name) + 1)); // crée nouveau string
+    if(new_string == NULL) {
+        return 1; // erreur avec malloc
+    }
+
+    if(sprintf(new_string, "%s%s%c", fractal_names, name, ' ') < 0) { // concaténise et place un espace à la fin
+        free(new_string);
         return 1; // erreur avec sprintf
     }
+    free(fractal_names); // libère l'ancien string des nom des fractales
     fractal_names = new_string; // nouveau string de nom de fractales
     printf(fractal_names); // TODO suppr
     return 0; // exécuté correctement
