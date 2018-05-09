@@ -16,7 +16,7 @@
 // TODO : executing tests
 // TODO : quid si aucune fractale ??
 // TODO : multiple fractales en sortie
-// TODO : no quid in subfunction
+// TODO : no quit in subfunction
 
 /* VARIABLES GLOBALES */
 
@@ -63,7 +63,7 @@ void *fractal_printer(); // pour le thread consommateur de computed_buffer
 int get_protected_variable(char variable[]); // retourne la valeur de la variable donnée en parmètre après un accès protégé
 int find_fractal_name(char *name); // retourne 1 si [name] se trouve déjà dans [fractal_names], 0 sinon
 int add_fractal_name(const char *name); // ajoute [name] à la liste [fractal_names]
-int file_out_has_bmp(const char *file); // vérifie que le nom du fichier a bien déjà .bmp en extension
+int file_out_has_bmp(char file[]); // vérifie que le nom du fichier a bien déjà .bmp en extension
 
 
 /* FONCTIONS PRINCIPALES */
@@ -411,12 +411,13 @@ void *fractal_printer()
     printf("Création du fichier .bmp avec la fractale ayant la plus grande moyenne : \"%s\"\n", fractal_get_name(temp_highest_fractal));
 
     // sortie de la fractale
-    if(file_out_has_bmp) { // si l'extension est déjà bien présente
+    if(file_out_has_bmp(file_out)) { // si l'extension est déjà bien présente
         if(write_bitmap_sdl(temp_highest_fractal, file_out)) {
             fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
         }
     } else { // si l'extension est à ajouter
+        printf("Ajout de .bmp comme extension au fichier de sortie\n");
         if(write_bitmap_sdl(temp_highest_fractal, strcat(file_out, ".bmp"))) {
             fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
@@ -605,7 +606,7 @@ int add_fractal_name(const char *name)
  * @file : nom du fichier a vérifier
  * @return : 1 si .bmp est présent en extension, 0 sinon
  */
-int file_out_has_bmp(const char *file) {
+int file_out_has_bmp(char file[]) {
     char *suffix = ".bmp";
 
     int file_len = strlen(file);

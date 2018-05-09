@@ -52,7 +52,7 @@ $(EXEC): $(OBJ) $(LIBRAIRIES)
 # permet de supprimer tous les fichiers intermédiaires
 clean:
 	@echo 'Cleaning previously made files'
-	@rm -vf $(EXEC) *.o libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
+	@rm -vf $(EXEC) *.o tests/*.o tests/tests libfractal/*.o libstack/*.o $(LIBRAIRIES) *.bmp
 
 # supprime tout et reconstruit le projet
 rebuild: clean build
