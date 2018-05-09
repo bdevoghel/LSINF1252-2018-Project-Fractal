@@ -119,7 +119,7 @@ int main(int argc, const char *argv[])
     /* LANCEMENT DES THREADS */
 
     // lancement des thread de lecture, un thread par fichier à lire
-    printf("Lancement des threads de lecture des fichiers\n");
+    //printf("Lancement des threads de lecture des fichiers\n");
     pthread_t reader_threads[files_to_read]; // vecteur contenant les threads de lecture de fichiers
     int j = 0; // emplacement dans [reader_threads]
     int i;
@@ -142,7 +142,7 @@ int main(int argc, const char *argv[])
     } // threads de lecture lancés et stockés dans [reader_threads]
 
     // lancement des threads de calcul
-    printf("Lancement des threads de calcul des fractales\n");
+    //printf("Lancement des threads de calcul des fractales\n");
     pthread_t calculating_threads[maxthreads]; // vecteur contenant les threads de calcul
     int k;
     for(k = 0 ; k < maxthreads ; ++k) {
@@ -172,16 +172,16 @@ int main(int argc, const char *argv[])
     pthread_mutex_lock(&executing_states_mutex); // section critique
     all_files_read = 1; // modifier l'état
     pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
-    printf("Lecture des fichiers fini\n");
+    //printf("Lecture des fichiers fini\n");
 
     if(get_protected_variable("fractals_to_process") == 0 && !at_least_one_fractal) { // s'il n'y avait aucune fractale à calculer
         pthread_cancel(printing_thread); // finir le thread de sortie
-        printf("Sortie des fractales fini sans ayant lu de fractales.\n");
+        //printf("Sortie des fractales fini sans ayant lu de fractales.\n");
     } else {
         // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
         pthread_join(printing_thread,
                      NULL); // finir le thread de sortie, pas de valeur de retour attendue (attente sur pthread_join tant que le thread n'a pas retourné)
-        printf("Sortie des fractales fini\n");
+        //printf("Sortie des fractales fini\n");
     }
 
     // annuler tous les threads de calcul
@@ -189,7 +189,7 @@ int main(int argc, const char *argv[])
     for(m = 0 ; m < maxthreads ; ++m) {
         pthread_cancel(calculating_threads[m]); // finir les threads de calcul et terminer leur utilisation
     }
-    printf("Threads de calcul terminés\n");
+    //printf("Threads de calcul terminés\n");
 
 
     /* LIBÉRATION DES RESSOURCES */
@@ -270,7 +270,7 @@ void *file_reader(void *file_name)
     } else { // si fichier à lire est un fichier normal
         file_to_read = (char *) file_name;
     }
-    printf("Lecture du fichier \"%s\"\n", file_to_read);
+    //printf("Lecture du fichier \"%s\"\n", file_to_read);
 
     // variables utilisées pour les fractales
     double a, b;
@@ -296,7 +296,7 @@ void *file_reader(void *file_name)
     while (scaned != EOF) { // parcourt jusqu'à la fin du fichier
         if (scaned == 1) {
             if (line[0] == '#') { // si commentaire
-                printf("Commentaire dans le fichier %s : %s\n", file_to_read, line); // affiche le commentaire
+                //printf("Commentaire dans le fichier %s : %s\n", file_to_read, line); // affiche le commentaire
             } else {
                 sscanf(line, "%s %i %i %lf %lf", name, &width, &height, &a, &b); // parsing en les bonnes valeurs
 
@@ -327,7 +327,7 @@ void *file_reader(void *file_name)
                         fractal_free(new_fractal); // libère la fractale créée
                         exit(EXIT_FAILURE);
                     }
-                    printf("Ajout de la fractale suivante à la pile : %s\n", line);
+                    //printf("Ajout de la fractale suivante à la pile : %s\n", line);
 
                     // ajoute le nom de la fractale à la liste des noms
                     pthread_mutex_lock(&fractal_names_mutex); // section critique B
@@ -360,7 +360,7 @@ void *file_reader(void *file_name)
 
     free(name); // libère la ressource
 
-    printf("Fini de lire le ficheir \"%s\"\n", file_to_read);
+    //printf("Fini de lire le ficheir \"%s\"\n", file_to_read);
 
     if(fclose(file)) { // fermer le document ouvert
         fprintf(stderr, "Error at file \"%s\" closing - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
@@ -407,7 +407,7 @@ void *fractal_calculator()
                 fprintf(stderr, "Error at bitmap writing - Exiting from fractal_calculator\n"); // imprime le problème à la stderr
                 exit(EXIT_FAILURE);
             }
-            printf("Fractale \"%s\" extraite en tant que fichier .bmp\n", fractal_get_name(toCompute_fractal));
+            //printf("Fractale \"%s\" extraite en tant que fichier .bmp\n", fractal_get_name(toCompute_fractal));
         }
 
         // ajout de la fractale dans [computed_buffer]
@@ -461,7 +461,7 @@ void *fractal_printer()
             fractal_free(temp_highest_fractal);
             temp_highest_fractal = computed_fractal;
         } else {
-            printf("La fractale \"%s\" a la même moyenne que la fractale \"%s\". La première des deux est gardée.\n", fractal_get_name(temp_highest_fractal), fractal_get_name(computed_fractal));
+            //printf("La fractale \"%s\" a la même moyenne que la fractale \"%s\". La première des deux est gardée.\n", fractal_get_name(temp_highest_fractal), fractal_get_name(computed_fractal));
             fractal_free(computed_fractal);
         }
 
@@ -472,7 +472,7 @@ void *fractal_printer()
     }
 
     // sortie de la fractale avec la plus grande moyenne
-    printf("Création du fichier .bmp avec la fractale ayant la plus grande moyenne : \"%s\"\n", fractal_get_name(temp_highest_fractal));
+    //printf("Création du fichier .bmp avec la fractale ayant la plus grande moyenne : \"%s\"\n", fractal_get_name(temp_highest_fractal));
 
     // sortie de la fractale
     if(file_out_has_bmp(file_out)) { // si l'extension est déjà bien présente
@@ -481,7 +481,7 @@ void *fractal_printer()
             exit(EXIT_FAILURE);
         }
     } else { // si l'extension est à ajouter
-        printf("Ajout de .bmp comme extension au fichier de sortie\n");
+        //printf("Ajout de .bmp comme extension au fichier de sortie\n");
         if(write_bitmap_sdl(temp_highest_fractal, strcat(file_out, ".bmp"))) {
             fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
