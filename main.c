@@ -221,6 +221,8 @@ int main(int argc, const char *argv[])
  */
 void *file_reader(void *file_name)
 {
+    char *file_to_read;
+
     if(!strcmp(file_name, "-")) { // si fichier à lire est l'entrée std
         /*
         FILE *input =  fopen(STDIN_FILE, "w+");
@@ -246,26 +248,27 @@ void *file_reader(void *file_name)
         close(userInput); //close stream before accessing it
         */
 
-        printf("\nPlease enter the fractals as following : [name width height a b]\n When you finished, press ctrl+d\n");
+        printf("\nPlease enter the fractals as following : [name width height a b]\nWhen you are finished, press ctrl+d\n");
 
-        FILE *file =  fopen(user_stdin.txt, "w+"); // crée nouveau fichier temporaire où mettre les input de l'utilisateur
+        FILE *file =  fopen("user_stdin.txt", "w+"); // crée nouveau fichier temporaire où mettre les input de l'utilisateur
         char buffer[150]; // buffer entre stdin et fichier
 
         while(fgets(buffer, sizeof(buffer), stdin) != NULL) { // tant que qqch peut être lu de stdin, met le contenu d'une ligne dans le buffer
             if(fputs(buffer, file) < 0) { // met la ligne de l'utilisateur dans le fichier temporaire, entre dans if si problème
                 fprintf(stderr, "Failed put user input in temporary file - Exiting from file_reader\n"); // imprime le problème à la stderr
+                fclose(file); // fermer le document ouvert
                 exit(EXIT_FAILURE);
             }
-            if(buffer[0]=='^D'){ // tant que l'utilisateur veut continuer
+            if(buffer[0] == 'x^D'){ // tant que l'utilisateur veut continuer
                 break;
             }
         }
         fflush(file); // s'assurer que tout soit bien ajouté au fichier temporaire
-        close(file); // ferme fichier temporaire
+        fclose(file); // ferme fichier temporaire
 
-        char *file_to_read = user_stdin.txt; // assigner le fichier à lire
+        file_to_read = "user_stdin.txt"; // assigner le fichier à lire
     } else { // si fichier à lire est un fichier normal
-        char *file_to_read = (char *) file_name;
+        file_to_read = (char *) file_name;
     }
     printf("Lecture du fichier \"%s\"\n", file_to_read);
 
@@ -349,6 +352,7 @@ void *file_reader(void *file_name)
         } else {
             fprintf(stderr, "Error at file \"%s\" scaning - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
             free(name); // libère la ressource
+            fclose(file); // fermer le document ouvert
             exit(EXIT_FAILURE);
         }
         scaned = fscanf(file, "%[^\n]\n", line); // scan la ligne suivante

@@ -20,9 +20,9 @@ build: $(EXEC)
 lib : libfractal/libfractal.a
 
 tests:
-    @echo 'Testing'
-    @rm -vf tests/test tests/*.o
-    @tests/test
+    @echo 'Testing (rebuilding beforehand)'
+    @make clean
+    @make tests/test
     ./tests/test
    	@echo 'Tests complete'
 
