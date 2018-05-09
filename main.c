@@ -14,8 +14,7 @@
 // TODO : insérer gitlog au répertoire à rendre
 // TODO : lecture de fichiers multiple
 // TODO : executing tests
-// TODO : quid si aucune fractale ??
-// TODO : multiple fractales en sortie
+// TODO : nom multiple fractales en sortie
 // TODO : no quit in subfunction
 
 /* VARIABLES GLOBALES */
@@ -26,6 +25,8 @@ int maxthreads = 1; // nombre de threads de calcul maximal, 1 par défault (vale
 
 int files_to_read; // nombre de fichiers à lire pour extraire les infos des fractales
 char file_out[64]; // nom du fichier de sortie finale
+
+int at_least_one_fractal = 0; // passera à 1 si au moins une fractale a été lue
 
 char *fractal_names = ""; // vecteur contenant tous les noms des fractales déjà utilisées
 
@@ -171,9 +172,15 @@ int main(int argc, const char *argv[])
     pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
     printf("Lecture des fichiers fini\n");
 
-    // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
-    pthread_join(printing_thread, NULL); // finir le thread de sortie, pas de valeur de retour attendue (attente sur pthread_join tant que le thread n'a pas retourné)
-    printf("Sortie des fractales fini\n");
+    if(get_protected_variable("fractals_to_process") == 0 && !at_least_one_fractal) { // s'il n'y avait aucune fractale à calculer
+        pthread_cancel(printing_thread); // finir le thread de sortie
+        printf("Sortie des fractales fini sans ayant lu de fractales.\n");
+    } else {
+        // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
+        pthread_join(printing_thread,
+                     NULL); // finir le thread de sortie, pas de valeur de retour attendue (attente sur pthread_join tant que le thread n'a pas retourné)
+        printf("Sortie des fractales fini\n");
+    }
 
     // annuler tous les threads de calcul
     int m;
@@ -239,6 +246,7 @@ void *file_reader(char *file_to_read)
                 sscanf(line, "%s %i %i %lf %lf", name, &width, &height, &a, &b); // parsing en les bonnes valeurs
 
                 pthread_mutex_lock(&fractal_names_mutex); // section critique A
+                at_least_one_fractal = 1; // met à jour le flag (ne sera utile que la première fois)
                 if (find_fractal_name(name)) { // si duplicata
                     pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique A
                     fprintf(stderr, "Fractal with name \"%s\" already exists - Ignoring fractal \"%s %i %i %f %f\"\n",

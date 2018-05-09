@@ -114,7 +114,7 @@ int main() {
             CU_add_test(pSuite, "test sur la push et pop", testPushAndPop)){
 
         CU_cleanup_registry();
-        fprintf(stderr, "Testing complete with error.\n");
+        fprintf(stderr, "Testing ended with error.\n");
         return CU_get_error();
     }
 
@@ -124,6 +124,6 @@ int main() {
     CU_cleanup_registry();
 
 
-    printf("Testing complete.\n");
+    printf("Testing successful.\n");
     return 0;
 }
