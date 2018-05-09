@@ -23,6 +23,7 @@ tests: tests/*.o $(LIBRAIRIES)
 	@echo 'Testing'
 	@$(CC) -o tests/tests tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
 	./tests/tests
+	@echo 'Tests complete'
 
 tests/*.o: tests/*.c
 	@echo 'Building tests'

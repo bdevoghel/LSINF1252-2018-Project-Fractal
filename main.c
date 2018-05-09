@@ -16,7 +16,7 @@
 // TODO : executing tests
 // TODO : quid si aucune fractale ??
 // TODO : multiple fractales en sortie
-// TODO : quid si .bmp déjà présent
+// TODO : no quid in subfunction
 
 /* VARIABLES GLOBALES */
 
@@ -44,8 +44,9 @@ pthread_mutex_t computed_mutex;
 sem_t computed_empty;
 sem_t computed_full;
 
-// protection des états des buffers
-pthread_mutex_t executing_states; // protection des états de l'exécution du programme, pour les variables de fin de programme
+// autres protections
+pthread_mutex_t executing_states_mutex; // protection des états de l'exécution du programme, pour les variables de fin de programme
+pthread_mutex_t fractal_names_mutex; // protection de la liste des fractales déjà prises en compte
 
 // variables de fin de programme
 int all_files_read = 0; // 0==FALSE , 1==TRUE
@@ -62,6 +63,7 @@ void *fractal_printer(); // pour le thread consommateur de computed_buffer
 int get_protected_variable(char variable[]); // retourne la valeur de la variable donnée en parmètre après un accès protégé
 int find_fractal_name(char *name); // retourne 1 si [name] se trouve déjà dans [fractal_names], 0 sinon
 int add_fractal_name(const char *name); // ajoute [name] à la liste [fractal_names]
+int file_out_has_bmp(const char *file); // vérifie que le nom du fichier a bien déjà .bmp en extension
 
 
 /* FONCTIONS PRINCIPALES */
@@ -96,8 +98,12 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Error at computed_buffer initialisation - Exiting main\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
-    if(pthread_mutex_init(&executing_states, NULL) != 0) { // initialisation du mutex sur les états de l'exécution du programme
-        fprintf(stderr, "Error at \"executing_states\" mutex initialisation - Exiting main\n"); // imprime le problème à la stderr
+    if(pthread_mutex_init(&executing_states_mutex, NULL) != 0) { // initialisation du mutex sur les états de l'exécution du programme
+        fprintf(stderr, "Error at \"executing_states_mutex\" mutex initialisation - Exiting main\n"); // imprime le problème à la stderr
+        exit(EXIT_FAILURE);
+    }
+    if(pthread_mutex_init(&fractal_names_mutex, NULL) != 0) { // initialisation du mutex sur les états de l'exécution du programme
+        fprintf(stderr, "Error at \"fractal_names_mutex\" mutex initialisation - Exiting main\n"); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
 
@@ -160,9 +166,9 @@ int main(int argc, const char *argv[])
     for(l = 0 ; l < files_to_read ; ++l) {
         pthread_join(reader_threads[l], NULL); // finir les threads de lecture, pas de valeur de retour attendue (attente sur pthread_join tant qu'un thread n'a pas retourné)
     }
-    pthread_mutex_lock(&executing_states); // section critique
+    pthread_mutex_lock(&executing_states_mutex); // section critique
     all_files_read = 1; // modifier l'état
-    pthread_mutex_unlock(&executing_states); // fin de section critique
+    pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
     printf("Lecture des fichiers fini\n");
 
     // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
@@ -190,7 +196,8 @@ int main(int argc, const char *argv[])
 
     pthread_mutex_destroy(&toCompute_mutex);
     pthread_mutex_destroy(&computed_mutex);
-    pthread_mutex_destroy(&executing_states);
+    pthread_mutex_destroy(&executing_states_mutex);
+    pthread_mutex_destroy(&fractal_names_mutex);
 
 
     printf("Programme exécuté correctement. EXIT\n");
@@ -222,68 +229,61 @@ void *file_reader(char *file_to_read)
 
     // lecture des lignes du fichier
     char line[150]; // taille que peut avoir une ligne + marge
-    /* TODO suppr
-    while(fgets(line, sizeof(line), file) != NULL) { // parcourt les lignes tant qu'elles existent
-        if(strlen(line) < 2 || line[0] == '\n') { // passe les lignes vides
-            // rien faire
-        } else if(line[0] == '#') { // affiche les commentaires
-            printf("Commentaire dans le fichier %s : %s", file_to_read, line);
-        } else {
-            printf("Ajout de la fractale suivante à la pile : %s", line);
-
-            // lecture des attributs de la fractale
-            char *name = strtok(line, " ");
-            width = atoi(strtok(NULL, " "));
-            height = atoi(strtok(NULL, " "));
-            a = atof(strtok(NULL, " "));
-            b = atof(strtok(NULL, " "));
-    */
     int scaned = fscanf(file, "%[^\n]\n", line); // scan une ligne du fichier avec spécification de format
 
     while (scaned != EOF) { // parcourt jusqu'à la fin du fichier
         if (scaned == 1) {
             if (line[0] == '#') { // si commentaire
-                printf("Commentaire dans le fichier %s : %s", file_to_read, line); // affiche le commentaire
+                printf("Commentaire dans le fichier %s : %s\n", file_to_read, line); // affiche le commentaire
             } else {
-                printf("Ajout de la fractale suivante à la pile : %s", line); //TODO \n ?
-
                 sscanf(line, "%s %i %i %lf %lf", name, &width, &height, &a, &b); // parsing en les bonnes valeurs
 
-                // création de la fractale
-                fractal_t *new_fractal = fractal_new(name, width, height, a, b);
-                if (new_fractal == NULL) { // si erreur à la création
-                    fprintf(stderr,
-                            "Error at fractal creation (returning NULL) - Ignoring fractal \"%s %i %i %f %f\"\n", name,
-                            width, height, a, b); // imprime le problème à la stderr
-                }
-
-                // ajout de la fractale dans [toCompute_buffer]
-                sem_wait(&toCompute_empty); // attendre qu'un slot se libère
-                pthread_mutex_lock(&toCompute_mutex); // section critique
+                pthread_mutex_lock(&fractal_names_mutex); // section critique A
                 if (find_fractal_name(name)) { // si duplicata
+                    pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique A
                     fprintf(stderr, "Fractal with name \"%s\" already exists - Ignoring fractal \"%s %i %i %f %f\"\n",
                             name, name, width, height, a, b); // imprime le problème à la stderr
-                } else { // si pas d'erreur à la création
+                } else { // si fractale peut être ajoutée au buffer
+                    pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique A
+
+                    // création de la fractale
+                    fractal_t *new_fractal = fractal_new(name, width, height, a, b);
+                    if (new_fractal == NULL) { // si erreur à la création
+                        fprintf(stderr,
+                                "Error at fractal creation (returning NULL) - Ignoring fractal \"%s %i %i %f %f\"\n", name,
+                                width, height, a, b); // imprime le problème à la stderr
+                    }
+
+                    // ajout de la fractale dans [toCompute_buffer]
+                    sem_wait(&toCompute_empty); // attendre qu'un slot se libère
+                    pthread_mutex_lock(&toCompute_mutex); // section critique
                     if (stack_push(&toCompute_buffer, new_fractal)) { // ajout à la pile
                         fprintf(stderr,
                                 "Error at pushing into stack - Exiting from file_reader\n"); // imprime le problème à la stderr
                         free(name); // libère la ressource
+                        fractal_free(new_fractal); // libère la fractale créée
                         exit(EXIT_FAILURE);
                     }
+                    printf("Ajout de la fractale suivante à la pile : %s\n", line);
+
                     // ajoute le nom de la fractale à la liste des noms
+                    pthread_mutex_lock(&fractal_names_mutex); // section critique B
                     if (add_fractal_name(name)) {
                         fprintf(stderr,
                                 "Error in add_fractal_name - Exiting from file_reader\n"); // imprime le problème à la stderr
                         free(name); // libère la ressource
+                        fractal_free(new_fractal); // libère la fractale créée
                         exit(EXIT_FAILURE);
                     }
+                    pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique B
+
                     pthread_mutex_unlock(&toCompute_mutex); // fin de section critique
                     sem_post(&toCompute_full); // un slot rempli de plus
 
                     // incrémentation du nombre de fractales a process
-                    pthread_mutex_lock(&executing_states); // section critique
+                    pthread_mutex_lock(&executing_states_mutex); // section critique
                     fractals_to_process++; // incrémente la valeur
-                    pthread_mutex_unlock(&executing_states); // fin de section critique
+                    pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
                 }
             }
         } else {
@@ -292,7 +292,8 @@ void *file_reader(char *file_to_read)
             exit(EXIT_FAILURE);
         }
         scaned = fscanf(file, "%[^\n]\n", line); // scan la ligne suivante
-    }
+    } // while
+
     free(name); // libère la ressource
 
     printf("Fini de lire le ficheir \"%s\"\n", file_to_read);
@@ -401,18 +402,25 @@ void *fractal_printer()
         }
 
         // décrémentation du nombre de fractales à process
-        pthread_mutex_lock(&executing_states); // section critique
+        pthread_mutex_lock(&executing_states_mutex); // section critique
         fractals_to_process--; // décrémente la valeur
-        pthread_mutex_unlock(&executing_states); // fin de section critique
+        pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
     }
 
     // sortie de la fractale avec la plus grande moyenne
     printf("Création du fichier .bmp avec la fractale ayant la plus grande moyenne : \"%s\"\n", fractal_get_name(temp_highest_fractal));
 
     // sortie de la fractale
-    if(write_bitmap_sdl(temp_highest_fractal, file_out)) {
-        fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
-        exit(EXIT_FAILURE);
+    if(file_out_has_bmp) { // si l'extension est déjà bien présente
+        if(write_bitmap_sdl(temp_highest_fractal, file_out)) {
+            fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
+            exit(EXIT_FAILURE);
+        }
+    } else { // si l'extension est à ajouter
+        if(write_bitmap_sdl(temp_highest_fractal, strcat(file_out, ".bmp"))) {
+            fprintf(stderr, "Error at bitmap writing - Exiting from fractal_printer\n"); // imprime le problème à la stderr
+            exit(EXIT_FAILURE);
+        }
     }
 
     // libère l'espace de la fractale ayant la plus grande moyenne
@@ -526,15 +534,15 @@ int initialise_buffer_protection(pthread_mutex_t *mutex, sem_t *empty, sem_t *fu
 int get_protected_variable(char variable[])
 {
     if(!strcmp(variable, "all_files_read")) { // si la variable à accéder est [all_files_read]
-        pthread_mutex_lock(&executing_states); // section critique
+        pthread_mutex_lock(&executing_states_mutex); // section critique
         int to_return = all_files_read; // récupérer valeur de l'état
-        pthread_mutex_unlock(&executing_states); // fin de section critique
+        pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
         return to_return;
     }
     if(!strcmp(variable, "fractals_to_process")) { // si la variable à accéder est [fractals_to_process]
-        pthread_mutex_lock(&executing_states); // section critique
+        pthread_mutex_lock(&executing_states_mutex); // section critique
         int to_return = fractals_to_process; // récupérer valeur de l'état
-        pthread_mutex_unlock(&executing_states); // fin de section critique
+        pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
         return to_return;
     }
 
@@ -550,6 +558,7 @@ int get_protected_variable(char variable[])
  */
 int find_fractal_name(char *name)
 {
+    printf("Finding %s in %s", name, fractal_names); // TODO suppr
     int i; // emplacement dans fractal_names
     int j = 0; // emplacement dans name
     int count = 0; // compte le nombre de caractères consécutifs identiques
@@ -563,9 +572,11 @@ int find_fractal_name(char *name)
             j = 0;
         }
         if(count == (int)strlen(name) && fractal_names[i+1] == ' ') {
+            printf("Fractale %s déjà ajoutée - Ignorée\n", name);
             return 1; // trouvé
         }
     }
+    printf("NOT FOUND"); // TODO suppr
     return 0; // pas trouvé
 }
 
@@ -577,10 +588,28 @@ int find_fractal_name(char *name)
  */
 int add_fractal_name(const char *name)
 {
+    printf("Adding %s to %s", name, fractal_names); // TODO suppr
+
     char new_string[strlen(fractal_names) + strlen(name) + 10]; // cré nouveau string
     if(sprintf(new_string, "%s%s%c",fractal_names, name, ' ') < 0) { // concaténise et place un espace à la fin
         return 1; // erreur avec sprintf
     }
     fractal_names = new_string; // nouveau string de nom de fractales
+    printf(fractal_names); // TODO suppr
     return 0; // exécuté correctement
+}
+
+/**
+ * file_out_has_bmp : vérifie que le nom du fichier [file] a bien déjà .bmp en extension
+ *
+ * @file : nom du fichier a vérifier
+ * @return : 1 si .bmp est présent en extension, 0 sinon
+ */
+int file_out_has_bmp(const char *file) {
+    char *suffix = ".bmp";
+
+    int file_len = strlen(file);
+    int suffix_len = strlen(suffix);
+
+    return (file_len >= suffix_len) && (strcmp(file + (file_len - suffix_len), suffix) == 0);
 }
