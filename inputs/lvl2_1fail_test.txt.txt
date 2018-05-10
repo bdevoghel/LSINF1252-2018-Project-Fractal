@@ -1,0 +1,13 @@
+# ce test à pour but de tester si les fractales de forme non définie se font bien ignorées
+nofail1 100 100 0 0.1 
+ nofail2 100 100 0.2 0.3
+nofail3   100 100 0.4 0.5
+nofail4 100 100   0.6    0.7    
+
+fail1 -100 100 0.8 0.9 
+fail2 notok 100 0.1 0.2
+fail3 100 100 notok 0.1
+
+42 100 100 0.3 0.4
+_ 100 100 0.5 0.6
+- 100 100 0.7 0.8
