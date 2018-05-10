@@ -24,7 +24,7 @@ tests:
     @make clean
     @make tests/test
     ./tests/test
-   	@echo 'Tests complete'
+    @echo 'Tests complete'
 
 tests/test: tests/*.o $(LIBRAIRIES)
 	@$(CC) -o tests/test tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)

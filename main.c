@@ -12,10 +12,9 @@
 #include "libfractal/fractal.h"
 
 // TODO : insérer gitlog au répertoire à rendre
-// TODO : executing tests
-// TODO : no quit in subfunction
 // TODO : ligne vide en tant que première ligne
 // TODO : valgrind
+// TODO : free buffers ?
 
 /* VARIABLES GLOBALES */
 
@@ -115,7 +114,6 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
-
     /* LANCEMENT DES THREADS */
 
     // lancement des thread de lecture, un thread par fichier à lire
@@ -134,6 +132,7 @@ int main(int argc, const char *argv[])
             pthread_t new_thread; // création d'un nouveau thread
             if(pthread_create(&new_thread, NULL, file_reader, (void *) argv[i])) { // initialisation du thread lecteur de fichier
                 fprintf(stderr, "Error at \"file_reader\" thread creation - Exiting main\n"); // imprime le problème à la stderr
+                free(fractal_names); //libère la ressource
                 exit(EXIT_FAILURE);
             }
             reader_threads[j] = new_thread; // nouveau thread mis dans le vecteur des lecteurs
@@ -149,6 +148,8 @@ int main(int argc, const char *argv[])
         pthread_t new_thread; // création d'un nouveau thread de calcul
         if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             fprintf(stderr, "Error at \"fractal_calculator\" thread creation - Exiting main\n"); // imprime le problème à la stderr
+            free(fractal_names); //libère la ressource
+            // TODO free reader_threads ?
             exit(EXIT_FAILURE);
         }
         calculating_threads[k] = new_thread; // nouveau thread mis dans le vecteur des calculateurs
@@ -158,6 +159,9 @@ int main(int argc, const char *argv[])
     pthread_t printing_thread; // création du thread de sortie des fractales
     if(pthread_create(&printing_thread, NULL, fractal_printer, NULL)) { // initialisation du thread de sortie
         fprintf(stderr, "Error at \"fractal_printer\" thread creation - Exiting main\n"); // imprime le problème à la stderr
+        // TODO free reader_threads ?
+        // TODO free calculating_threads ?
+        free(fractal_names); //libère la ressource
         exit(EXIT_FAILURE);
     } // threads de sortie lancé
 
@@ -172,16 +176,16 @@ int main(int argc, const char *argv[])
     pthread_mutex_lock(&executing_states_mutex); // section critique
     all_files_read = 1; // modifier l'état
     pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
-    //printf("Lecture des fichiers fini\n");
+    printf("Lecture des fichiers fini\n");
 
     if(get_protected_variable("fractals_to_process") == 0 && !at_least_one_fractal) { // s'il n'y avait aucune fractale à calculer
         pthread_cancel(printing_thread); // finir le thread de sortie
-        //printf("Sortie des fractales fini sans ayant lu de fractales.\n");
+        printf("Sortie des fractales fini sans ayant lu de fractales.\n");
     } else {
         // attendre que le thread de sortie ait fini de sortir les fractales nécessaires
         pthread_join(printing_thread,
                      NULL); // finir le thread de sortie, pas de valeur de retour attendue (attente sur pthread_join tant que le thread n'a pas retourné)
-        //printf("Sortie des fractales fini\n");
+        printf("Sortie des fractales fini\n");
     }
 
     // annuler tous les threads de calcul
@@ -189,7 +193,7 @@ int main(int argc, const char *argv[])
     for(m = 0 ; m < maxthreads ; ++m) {
         pthread_cancel(calculating_threads[m]); // finir les threads de calcul et terminer leur utilisation
     }
-    //printf("Threads de calcul terminés\n");
+    printf("Threads de calcul terminés\n");
 
 
     /* LIBÉRATION DES RESSOURCES */
@@ -208,6 +212,7 @@ int main(int argc, const char *argv[])
     pthread_mutex_destroy(&executing_states_mutex);
     pthread_mutex_destroy(&fractal_names_mutex);
 
+    free(fractal_names); //libère la ressource
 
     printf("Programme exécuté correctement. EXIT\n");
     exit(EXIT_SUCCESS);
@@ -224,34 +229,17 @@ void *file_reader(void *file_name)
     char *file_to_read;
 
     if(!strcmp(file_name, "-")) { // si fichier à lire est l'entrée std
-        /*
-        FILE *input =  fopen(STDIN_FILE, "w+");
-
-        char buffer[150];
-
-        int do_stop = 0;
-        while(!do_stop){
-            printf("%s\n", "Enter fractal formatted as follow: [name width height a b]" );
-            fgets(buffer, sizeof(buffer), stdin);
-            int r = fputs(buffer,userInput);
-            if (r<0) {
-                printf("%s %s\n","Failed to print fractal in temporary file", STDIN_FILE);
-            }
-            printf("%s","Do you want to enter another fractal? Y/N :");
-            fgets(buffer, sizeof(buffer), stdin);
-
-            if(buffer[0]=='N'||buffer[0]=='n'){
-                do_stop = 1;
-            }
-        }
-        fflush(userInput); //push everything to memory
-        close(userInput); //close stream before accessing it
-        */
-
-        printf("\nPlease enter the fractals as following : [name width height a b]\nWhen you are finished, press ctrl+d\n");
 
         FILE *file =  fopen("user_stdin.txt", "w+"); // crée nouveau fichier temporaire où mettre les input de l'utilisateur
         char buffer[150]; // buffer entre stdin et fichier
+        int count = 0; // compter combien de fractales ajoutées
+
+        printf("\n====================================================================\n");
+        printf(  "           You have selected STDIN as input for fractals.           \n");
+        printf(  "  Please enter the fractals as following : [name width height a b]  \n");
+        printf(  "                 Press ENTER between fractals input                 \n");
+        printf(  "                When you are finished , press CRTL+D                \n");
+        printf(  "====================================================================\n\n");
 
         while(fgets(buffer, sizeof(buffer), stdin) != NULL) { // tant que qqch peut être lu de stdin, met le contenu d'une ligne dans le buffer
             if(fputs(buffer, file) < 0) { // met la ligne de l'utilisateur dans le fichier temporaire, entre dans if si problème
@@ -259,14 +247,18 @@ void *file_reader(void *file_name)
                 fclose(file); // fermer le document ouvert
                 exit(EXIT_FAILURE);
             }
-            if(buffer[0] == 'x^D'){ // tant que l'utilisateur veut continuer
-                break;
-            }
+            count++;
         }
         fflush(file); // s'assurer que tout soit bien ajouté au fichier temporaire
         fclose(file); // ferme fichier temporaire
 
+        printf("\n====================================================================\n");
+        printf(  "                You finished adding fractals manualy.               \n");
+        printf(  "                  You added a total of %i fractals.                 \n", count);
+        printf(  "====================================================================\n\n");
+
         file_to_read = "user_stdin.txt"; // assigner le fichier à lire
+
     } else { // si fichier à lire est un fichier normal
         file_to_read = (char *) file_name;
     }
@@ -293,25 +285,25 @@ void *file_reader(void *file_name)
     char line[150]; // taille que peut avoir une ligne + marge
     int scaned = fscanf(file, "%[^\n]\n", line); // scan une ligne du fichier avec spécification de format
 
-    while (scaned != EOF) { // parcourt jusqu'à la fin du fichier
-        if (scaned == 1) {
-            if (line[0] == '#') { // si commentaire
+    while(scaned != EOF) { // parcourt jusqu'à la fin du fichier
+        if(scaned == 1) {
+            if(line[0] == '#') { // si commentaire
                 //printf("Commentaire dans le fichier %s : %s\n", file_to_read, line); // affiche le commentaire
             } else {
                 sscanf(line, "%s %i %i %lf %lf", name, &width, &height, &a, &b); // parsing en les bonnes valeurs
 
                 pthread_mutex_lock(&fractal_names_mutex); // section critique A
                 at_least_one_fractal = 1; // met à jour le flag (ne sera utile que la première fois)
-                if (find_fractal_name(name)) { // si duplicata
+                if(find_fractal_name(name)) { // si duplicata
                     pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique A
-                    fprintf(stderr, "Fractal with name \"%s\" already exists - Ignoring fractal \"%s %i %i %f %f\"\n",
-                            name, name, width, height, a, b); // imprime le problème à la stderr
+                    fprintf(stderr, "Fractal with name \"%s\" in file \"%s\" already exists - Ignoring fractal \"%s %i %i %f %f\"\n",
+                            name, file_to_read, name, width, height, a, b); // imprime le problème à la stderr
                 } else { // si fractale peut être ajoutée au buffer
                     pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique A
 
                     // création de la fractale
                     fractal_t *new_fractal = fractal_new(name, width, height, a, b);
-                    if (new_fractal == NULL) { // si erreur à la création
+                    if(new_fractal == NULL) { // si erreur à la création
                         fprintf(stderr,
                                 "Error at fractal creation (returning NULL) - Ignoring fractal \"%s %i %i %f %f\"\n", name,
                                 width, height, a, b); // imprime le problème à la stderr
@@ -320,22 +312,24 @@ void *file_reader(void *file_name)
                     // ajout de la fractale dans [toCompute_buffer]
                     sem_wait(&toCompute_empty); // attendre qu'un slot se libère
                     pthread_mutex_lock(&toCompute_mutex); // section critique
-                    if (stack_push(&toCompute_buffer, new_fractal)) { // ajout à la pile
+                    if(stack_push(&toCompute_buffer, new_fractal)) { // ajout à la pile
                         fprintf(stderr,
                                 "Error at pushing into stack - Exiting from file_reader\n"); // imprime le problème à la stderr
                         free(name); // libère la ressource
                         fractal_free(new_fractal); // libère la fractale créée
+                        fclose(file); // ferme le flux
                         exit(EXIT_FAILURE);
                     }
                     //printf("Ajout de la fractale suivante à la pile : %s\n", line);
 
                     // ajoute le nom de la fractale à la liste des noms
                     pthread_mutex_lock(&fractal_names_mutex); // section critique B
-                    if (add_fractal_name(name)) {
+                    if(add_fractal_name(name)) {
                         fprintf(stderr,
                                 "Error in add_fractal_name - Exiting from file_reader\n"); // imprime le problème à la stderr
                         free(name); // libère la ressource
                         fractal_free(new_fractal); // libère la fractale créée
+                        fclose(file); // ferme le flux
                         exit(EXIT_FAILURE);
                     }
                     pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique B
@@ -366,6 +360,11 @@ void *file_reader(void *file_name)
         fprintf(stderr, "Error at file \"%s\" closing - Exiting from file_reader\n", file_to_read); // imprime le problème à la stderr
         exit(EXIT_FAILURE);
     }
+
+    if(file_to_read == "-") {// si l'entrée était stdin
+        remove("user_stdin.txt"); // supprime le fichier temporaire
+    }
+
     pthread_exit(NULL);
 } // void *file_reader()
 
