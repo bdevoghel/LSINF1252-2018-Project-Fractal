@@ -11,10 +11,7 @@
 #include "libstack/stack.h"
 #include "libfractal/fractal.h"
 
-// TODO : insérer gitlog au répertoire à rendre
-// TODO : ligne vide en tant que première ligne ??
-// TODO : valgrind : valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./main inputs/lvl0_exemple_énoncé.txt -d o.bmp
-// TODO : free buffers ?
+// to check memory leaks : valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./main inputs/lvl0_exemple_énoncé.txt -d o.bmp
 
 /* VARIABLES GLOBALES */
 
@@ -149,7 +146,7 @@ int main(int argc, const char *argv[])
         if(pthread_create(&new_thread, NULL, fractal_calculator, NULL)) { // initialisation du thread de calcul
             fprintf(stderr, "Error at \"fractal_calculator\" thread creation - Exiting main\n"); // imprime le problème à la stderr
             free(fractal_names); //libère la ressource
-            // TODO free reader_threads ?
+            // free reader_threads ?
             exit(EXIT_FAILURE);
         }
         calculating_threads[k] = new_thread; // nouveau thread mis dans le vecteur des calculateurs
@@ -159,8 +156,8 @@ int main(int argc, const char *argv[])
     pthread_t printing_thread; // création du thread de sortie des fractales
     if(pthread_create(&printing_thread, NULL, fractal_printer, NULL)) { // initialisation du thread de sortie
         fprintf(stderr, "Error at \"fractal_printer\" thread creation - Exiting main\n"); // imprime le problème à la stderr
-        // TODO free reader_threads ?
-        // TODO free calculating_threads ?
+        // free reader_threads ?
+        // free calculating_threads ?
         free(fractal_names); //libère la ressource
         exit(EXIT_FAILURE);
     } // threads de sortie lancé
@@ -369,8 +366,8 @@ void *file_reader(void *file_name)
         exit(EXIT_FAILURE);
     }
 
-    if(!strcmp(file_to_read, "-")) {// si l'entrée était stdin
-        remove("user_stdin.txt"); // supprime le fichier temporaire // TODO ne l'a pas bien supprimé !?
+    if(!strcmp(file_name, "-")) {// si l'entrée était stdin
+        remove("user_stdin.txt"); // supprime le fichier temporaire
     }
 
     pthread_exit(NULL);
