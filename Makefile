@@ -17,14 +17,15 @@ EXEC = main
 
 # regroupe dans cette dépendance l'ensemble des exécutables à produire
 build: $(EXEC)
+
 lib : libfractal/libfractal.a
 
 tests:
-    @echo 'Testing (rebuilding beforehand)'
-    @make clean
-    @make tests/test
-    ./tests/test
-    @echo 'Tests complete'
+	@echo 'Testing (rebuilding beforehand)'
+	@make clean
+	@make tests/test
+	./tests/test
+	@echo 'Tests complete'
 
 tests/test: tests/*.o $(LIBRAIRIES)
 	@$(CC) -o tests/test tests/*.o $(LIBRAIRIES) $(CFLAGS) $(LDFLAGS)
