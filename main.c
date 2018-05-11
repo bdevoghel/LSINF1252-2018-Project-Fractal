@@ -209,7 +209,7 @@ int main(int argc, const char *argv[])
     pthread_mutex_destroy(&executing_states_mutex);
     pthread_mutex_destroy(&fractal_names_mutex);
 
-    free(fractal_names); //libère la ressource
+    free(fractal_names); // libère la ressource
 
     printf("Programme exécuté correctement. EXIT\n");
     exit(EXIT_SUCCESS);
@@ -327,7 +327,7 @@ void *file_reader(void *file_name)
 
                             // ajoute le nom de la fractale à la liste des noms
                             pthread_mutex_lock(&fractal_names_mutex); // section critique B
-                            if(number_of_fractals < 100 && add_fractal_name(name)) {
+                            if(add_fractal_name(name)) {
                                 fprintf(stderr,
                                         "Error in add_fractal_name - Exiting from file_reader\n"); // imprime le problème à la stderr
                                 free(name); // libère la ressource
@@ -659,7 +659,7 @@ int find_fractal_name(char *name)
  */
 int add_fractal_name(const char *name)
 {
-    char *new_string = (char *) malloc(sizeof(char) * (strlen(fractal_names) + strlen(name) + 1)); // crée nouveau string
+    char *new_string = (char *) malloc(sizeof(char) * (strlen(fractal_names) + strlen(name) + 2)); // crée nouveau string
     if(new_string == NULL) {
         return 1; // erreur avec malloc
     }
