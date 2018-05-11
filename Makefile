@@ -51,6 +51,23 @@ $(EXEC): $(OBJ) $(LIBRAIRIES)
 	@echo 'Building main'
 	@$(CC) -o $@ -c $< $(CFLAGS)
 
+test_time:
+    @echo 'Testing effectiveness of multithreading'
+    @echo 'In order to put pressure on the calculating threads, we will use -d option on relatively big fractals'
+    @echo 'First we will test with 1 thread and then with 5'
+    @START1 = time
+    ./main -d inputs/lvl3_time_consuming.txt o.bmp
+    @END1 = time
+    @ELAPSED1 = END1-START1
+    @echo 'Elapsed time for [./main -d inputs/lvl3_time_consuming.txt o.bmp] : $ELAPSED1'
+    @START2 = time
+    ./main -d --maxthreads 5 inputs/lvl3_time_consuming.txt o.bmp
+    @END2 = time
+    @ELAPSED2 = END2-START2
+    @echo 'Elapsed time for [./main -d --maxthreads 5 inputs/lvl3_time_consuming.txt o.bmp] : $ELAPSED2'
+    @echo 'Try running this script multiple times to get a better picture of the effectiveness'
+
+
 # dépendances qui seront systématiquement reconstruites
 .PHONY: build clean rebuild tests
 

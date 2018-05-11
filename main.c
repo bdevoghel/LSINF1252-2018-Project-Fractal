@@ -22,7 +22,7 @@ int maxthreads = 1; // nombre de threads de calcul maximal, 1 par défault (vale
 int files_to_read; // nombre de fichiers à lire pour extraire les infos des fractales
 char file_out[64]; // nom du fichier de sortie finale
 
-int at_least_one_fractal = 0; // passera à 1 si au moins une fractale a été lue
+int number_of_fractals = 0; // mémoire du nombre de fractales ayant été lues
 
 char *fractal_names; // vecteur contenant tous les noms des fractales déjà utilisées
 
@@ -175,7 +175,7 @@ int main(int argc, const char *argv[])
     pthread_mutex_unlock(&executing_states_mutex); // fin de section critique
     printf("Lecture des fichiers fini\n");
 
-    if(get_protected_variable("fractals_to_process") == 0 && !at_least_one_fractal) { // s'il n'y avait aucune fractale à calculer
+    if(get_protected_variable("fractals_to_process") == 0 && number_of_fractals == 0) { // s'il n'y avait aucune fractale à calculer
         pthread_cancel(printing_thread); // finir le thread de sortie
         printf("Sortie des fractales fini sans ayant lu de fractales.\n");
     } else {
@@ -297,7 +297,7 @@ void *file_reader(void *file_name)
                 } else {
 
                     pthread_mutex_lock(&fractal_names_mutex); // section critique A
-                    at_least_one_fractal = 1; // met à jour le flag (ne sera utile que la première fois)
+                    number_of_fractals++; // met à jour le compte
                     if(find_fractal_name(name)) { // si duplicata
                         pthread_mutex_unlock(&fractal_names_mutex); // fin de section critique A
                         fprintf(stderr, "Fractal with name \"%s\" in file \"%s\" already exists - Ignoring fractal \"%s\"\n", name, file_to_read, name); // imprime le problème à la stderr
@@ -327,7 +327,7 @@ void *file_reader(void *file_name)
 
                             // ajoute le nom de la fractale à la liste des noms
                             pthread_mutex_lock(&fractal_names_mutex); // section critique B
-                            if(add_fractal_name(name)) {
+                            if(number_of_fractals < 100 && add_fractal_name(name)) {
                                 fprintf(stderr,
                                         "Error in add_fractal_name - Exiting from file_reader\n"); // imprime le problème à la stderr
                                 free(name); // libère la ressource
@@ -549,21 +549,21 @@ void process_options(int argc, char *argv[])
 
     // affiche messages d'info sur les options
     if(d_option) {
-        printf("Option -d présente : une image sera générée pour chaque fractale calculée\n");
+        printf("Option -d present : one image per fractal will be generated\n");
     } else {
-        printf("Option -d pas présente : une image de la fractale ayant la plus grande moyenne sera générée dans le fichier %s\n", file_out);
+        printf("Option -d not present : a image of the fractal with the highest average value will be generated in %s\n", file_out);
     }
     if(mt_option) {
         if(maxthreads == 1) {
-            printf("Option --maxthreads présente : %i thread de calcul sera utlisé\n", maxthreads);
+            printf("Option --maxthreads present : %i calculation thread will be used\n", maxthreads);
         } else if(maxthreads <= 0) {
-            fprintf(stderr, "Not enough calculation threads - Exiting from process_optios\n"); // imprime le problème à la stderr
+            fprintf(stderr, "Not enough calculation threads - Exiting from process_options\n"); // imprime le problème à la stderr
             exit(EXIT_FAILURE);
         } else {
-            printf("Option --maxthreads présente : %i threads de calcul seront utlisés\n", maxthreads);
+            printf("Option --maxthreads présent : %i calculation threads will be used\n", maxthreads);
         }
     } else {
-        printf("Option --maxthreads pas présente : le nombre par défault de %i thread de calcul sera utlisé\n", maxthreads);
+        printf("Option --maxthreads not présent : the default value of %i calculation thread will be used\n", maxthreads);
     }
 } // flags d'options sont mis à jour et nous connaissons [files_to_read] et [file_out]
 
