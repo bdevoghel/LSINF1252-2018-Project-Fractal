@@ -1,0 +1,740 @@
+commit 69d41dd42e3ce8f719099bff57836c13c8d3f9d7
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Fri May 11 14:14:33 2018 +0200
+
+    bug corrections
+
+ Makefile                       |  23 ++++++++---------------
+ inputs/lvl3_time_consuming.txt |  30 ++++++++++--------------------
+ main.c                         |   6 +++---
+ rapport.pdf                    | Bin 0 -> 201896 bytes
+ 4 files changed, 21 insertions(+), 38 deletions(-)
+
+commit 1253b5ed3ade584179c4fd5ed440b9ba23f5ca86
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Fri May 11 11:09:04 2018 +0200
+
+    bug correction and adding time running test
+
+ Makefile                       | 17 +++++++++++++++++
+ README.md                      | 11 +++++++++++
+ inputs/lvl3_time_consuming.txt | 20 ++++++++++++++++++++
+ main.c                         | 20 ++++++++++----------
+ 4 files changed, 58 insertions(+), 10 deletions(-)
+
+commit baa9da3a92cc3dbaa82482ce7127e6537872d478
+Merge: f3d07a3 79c09cf
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Fri May 11 01:21:06 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit f3d07a3a94d11b0b9c9f65031205a8c769cc8418
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Fri May 11 01:20:56 2018 +0200
+
+    bug correction & todo completion
+
+ main.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+commit 17ce3f58361acfa7f5e7d4e6d41371dde2f5e597
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 22:04:46 2018 +0200
+
+    adding test files
+
+ "inputs/lvl0_exemple_\303\251nonc\303\251.txt" |       6 +
+ inputs/lvl1_1few_big.txt                       |       5 +
+ inputs/lvl1_2many_average.txt                  |    1000 +
+ inputs/lvl1_3lots_small.txt                    | 1000000 +++++++++++++++++++++
+ inputs/lvl2_1fail_test.txt                     |      10 +
+ inputs/lvl2_2empty_test.txt                    |       7 +
+ 6 files changed, 1001028 insertions(+)
+
+commit fad676cf11244ddabef3231340c2971cc8ff1c82
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 22:01:49 2018 +0200
+
+    bug corrections
+
+ Makefile                                           |      11 +-
+ "inputs/lvl0_exemple_\303\251nonc\303\251.txt.txt" |       6 -
+ inputs/lvl1_1few_big.txt.txt                       |       5 -
+ inputs/lvl1_2many_average.txt.txt                  |    1000 -
+ inputs/lvl1_3lots_small.txt.txt                    | 1000000 -----------------
+ inputs/lvl2_1fail_test.txt.txt                     |      13 -
+ inputs/lvl2_2empty_test.txt.txt                    |       5 -
+ main.c                                             |     121 +-
+ tests/test.c                                       |     292 +-
+ 9 files changed, 219 insertions(+), 1001234 deletions(-)
+
+commit 79c09cf2eec97c1fec9e6bd668446148100f1f78
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Thu May 10 20:05:22 2018 +0200
+
+    Delete gitlog.stat
+
+ gitlog.stat | 621 ------------------------------------------------------------
+ 1 file changed, 621 deletions(-)
+
+commit fa1d86489429eaaad38c20684288541b8876b849
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Thu May 10 20:05:08 2018 +0200
+
+    Delete fractal_109_deVillenfagne_deVoghel.zip
+
+ fractal_109_deVillenfagne_deVoghel.zip | Bin 2668336 -> 0 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+commit 660e75fd472b34accc341e821c273afcf7e9491a
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 16:18:49 2018 +0200
+
+    adding testfile
+
+ inputs/lvl2_1fail_test.txt.txt  | 13 +++++++++++++
+ inputs/lvl2_2empty_test.txt.txt |  5 +++++
+ 2 files changed, 18 insertions(+)
+
+commit b49b3618c5570b2c75fe881be096afa809981963
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 16:18:03 2018 +0200
+
+    adding testfile
+
+ inputs/lvl2_fail_test.txt.txt | 13 -------------
+ 1 file changed, 13 deletions(-)
+
+commit 8c95b167b7fc0f23962cd3c11e6294f44f63f792
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 13:07:31 2018 +0200
+
+    adding madatory files and zip file (for submission test)
+
+ fractal_109_deVillenfagne_deVoghel.zip | Bin 0 -> 2668336 bytes
+ gitlog.stat                            | 621 +++++++++++++++++++++++++++++++++
+ rapport.pdf                            |   0
+ 3 files changed, 621 insertions(+)
+
+commit 57213cbfe5e145223f2e417bc4d1aa6ad89bf6d8
+Merge: e6695c3 ef7e16b
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 12:21:15 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit e6695c3015ce705fb046832f9de23a4577952eb0
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 12:20:45 2018 +0200
+
+    adding inputs
+
+ "inputs/lvl0_exemple_\303\251nonc\303\251.txt.txt" |       6 +
+ inputs/lvl1_1few_big.txt.txt                       |       5 +
+ inputs/lvl1_2many_average.txt.txt                  |    1000 +
+ inputs/lvl1_3lots_small.txt.txt                    | 1000000 +++++++++++++++++
+ inputs/lvl2_fail_test.txt.txt                      |      13 +
+ 5 files changed, 1001024 insertions(+)
+
+commit ef7e16bb8d7cdc000e12c0db5f0f5b56493913d4
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Thu May 10 11:22:43 2018 +0200
+
+    Update README.md
+
+ README.md | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 496b53d7d9c97b47d6b6408c85600a6b1b5e408c
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Thu May 10 11:20:57 2018 +0200
+
+    Delete fractal_test.txt
+
+ fractal_test.txt | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+commit 21f6dc8769c2274f06a2a2b979880dc69feee924
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Thu May 10 11:20:38 2018 +0200
+
+    Delete vcs.xml
+
+ .idea/vcs.xml | 6 ------
+ 1 file changed, 6 deletions(-)
+
+commit a3fde1aac6bc3b9e14300635377a4227f8395c73
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 10 11:02:34 2018 +0200
+
+    bug correction, user friendy interface, avoiding memory leaks
+
+ Makefile |  2 +-
+ main.c   | 87 ++++++++++++++++++++++++++++++++--------------------------------
+ 2 files changed, 44 insertions(+), 45 deletions(-)
+
+commit a752c862a13d5d89b045e494f7b54ad1cf5a1d4b
+Merge: 288b9c5 8b3a1c7
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 21:29:51 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit 288b9c59299daca6525a1e028d96a37cdce31c66
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 21:29:30 2018 +0200
+
+    printf exclusion
+
+ main.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+commit 6fab160eff7d21554963911e59b8530a793cc6d0
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 21:27:17 2018 +0200
+
+    bug corrections
+    
+    finish is near
+
+ Makefile         |  6 +++---
+ libstack/stack.c |  2 +-
+ main.c           | 16 ++++++++++------
+ 3 files changed, 14 insertions(+), 10 deletions(-)
+
+commit 8b3a1c7b3ad5916c658546b27f65651c16cd67b1
+Author: Clothildedevillenfagne <38529359+Clothildedevillenfagne@users.noreply.github.com>
+Date:   Wed May 9 21:03:49 2018 +0200
+
+    test length
+
+ tests/test.c | 39 +++++++++++++++++++++++++++------------
+ 1 file changed, 27 insertions(+), 12 deletions(-)
+
+commit 92ce12a6c5cbeef3d0f5c119ba33e101f362170d
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 20:55:26 2018 +0200
+
+    added stdin input
+
+ Makefile | 18 ++++++++++-------
+ main.c   | 69 ++++++++++++++++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 63 insertions(+), 24 deletions(-)
+
+commit c4f20876439075346106afbb1b1eb0a4b3125e01
+Merge: 1d81c5b 1b5b0f6
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 17:44:44 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit 1b5b0f65376bd5ef49e7e8fef91d4c6e52bc255b
+Author: Clothildedevillenfagne <38529359+Clothildedevillenfagne@users.noreply.github.com>
+Date:   Wed May 9 17:42:59 2018 +0200
+
+    correct test
+
+ tests/test.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
+
+commit 1d81c5b31c4ba6bcfa9f01e2f4af94960a878e55
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 17:39:57 2018 +0200
+
+    malloc fractal_names
+
+ Makefile |  4 ++--
+ main.c   | 23 ++++++++++++++++++++---
+ 2 files changed, 22 insertions(+), 5 deletions(-)
+
+commit 2d2b6412d30600f78342d3ca866ef017861d5338
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 17:03:25 2018 +0200
+
+    no fractals handeling
+
+ main.c       | 18 +++++++++++++-----
+ tests/test.c |  4 ++--
+ 2 files changed, 15 insertions(+), 7 deletions(-)
+
+commit acb4880d595f8a9b7070f52261851e7234e4c446
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 16:44:14 2018 +0200
+
+    bug correction
+
+ Makefile | 2 +-
+ main.c   | 9 +++++----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+commit e0a2ef45753be0e9da8e0137cd183b2a5b576771
+Author: Clothildedevillenfagne <38529359+Clothildedevillenfagne@users.noreply.github.com>
+Date:   Wed May 9 16:19:16 2018 +0200
+
+    add test list
+
+ tests/test.c | 37 ++++++++++++++++++++++++++++++++-----
+ 1 file changed, 32 insertions(+), 5 deletions(-)
+
+commit 8201fe3729f5654b2381cfeb4ebc11a491404557
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 16:18:06 2018 +0200
+
+    bug correction & TODO completion
+
+ Makefile |   1 +
+ main.c   | 131 ++++++++++++++++++++++++++++++++++++++-------------------------
+ 2 files changed, 81 insertions(+), 51 deletions(-)
+
+commit 0368537fc65d5e5fe18603b5e8df5ecb4ab8f88e
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 15:02:28 2018 +0200
+
+    bug correction (scope of name)
+
+ Makefile     |  4 ++--
+ main.c       | 12 +++++++++++-
+ tests/test.c |  3 ++-
+ 3 files changed, 15 insertions(+), 4 deletions(-)
+
+commit 9163312dfc8a9dc75b1e92ee387f5ac5485ee1b9
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 9 14:21:11 2018 +0200
+
+    file reader with fscanf
+    
+    peut maintenant négliger les lignes vides
+
+ Makefile |  4 +--
+ main.c   | 94 +++++++++++++++++++++++++++++++++++++++++-----------------------
+ 2 files changed, 62 insertions(+), 36 deletions(-)
+
+commit 450ff5296b0b2f5670d344b7ed27231b2c623cfa
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 18:24:28 2018 +0200
+
+    neglect double fractals
+
+ main.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 55 insertions(+), 5 deletions(-)
+
+commit da36b30d5d0dcb416e013e19311dcb1c3f55673d
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 17:04:13 2018 +0200
+
+    bug correction & working on TODO's
+
+ Makefile             |  12 +++---
+ libfractal/fractal.h |   4 +-
+ main.c               | 115 ++++++++++++++++++++++-----------------------------
+ tests/test.c         |   8 ++--
+ 4 files changed, 61 insertions(+), 78 deletions(-)
+
+commit 6ea4287daf824d658a061775a4be3a515173b67e
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 15:29:53 2018 +0200
+
+    Clothilde : bug correction test
+
+ tests/test.c | 75 ++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 37 insertions(+), 38 deletions(-)
+
+commit 1747c5a1899b48bf8dc3ae7dacd17c5ac408a316
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 15:24:54 2018 +0200
+
+    only print 1 highest mean fractal
+
+ main.c | 77 ++++++++++++++++++------------------------------------------------
+ 1 file changed, 21 insertions(+), 56 deletions(-)
+
+commit 65170bd1e3e0a6d8dc769c97a9fc475e261ea28c
+Merge: 94d963e 7bd33af
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 14:56:58 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit 94d963e5d3d729b2977a625557d3a22dc3ce4557
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 14:56:48 2018 +0200
+
+    Exteriorise  "int i" in for loops
+
+ main.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+commit 841dd5b7acf7876b00bf35a532cd9f3b3aa4c7f9
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 14:52:17 2018 +0200
+
+    bug corrections
+
+ main.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+commit 06437ce53ecc2660657f247784ee80a2cadf5805
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Tue May 8 14:31:51 2018 +0200
+
+    bug corrections & print -d in calculator
+
+ Makefile |  2 +-
+ main.c   | 45 +++++++++++++++++++++++----------------------
+ 2 files changed, 24 insertions(+), 23 deletions(-)
+
+commit 27cc43b5ff77d5fa5fec3a698eabafcdcc1008ad
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sun May 6 12:10:33 2018 +0200
+
+    Corrections & added tests makefile
+
+ Makefile     | 16 +++++++---
+ main.c       | 95 ++++++++----------------------------------------------------
+ tests/test.c |  6 ++--
+ 3 files changed, 27 insertions(+), 90 deletions(-)
+
+commit 7bd33afdd60406618e32e8e59c720eaaf38e53fa
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Sun May 6 10:20:02 2018 +0200
+
+    correction fonction test déjà présente
+
+ tests/test.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit d31fde310ee6d0d8d3842423da627e471776122e
+Merge: 33dd0e8 c2b7c5a
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sat May 5 22:31:44 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+    
+    # Conflicts:
+    #       tests/test.c
+
+commit 33dd0e8c5aa0fa76c9e310b84527ce1bd990997e
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sat May 5 22:29:39 2018 +0200
+
+    Thread joining & sub-functions
+    
+    Grosses modifs au niveau des conditions de join de threads
+
+ Makefile         |  97 +++++++++---------
+ README.md        |  16 +--
+ fractal_test.txt |  35 +++----
+ libstack/stack.c | 102 +++++++++----------
+ libstack/stack.h | 100 +++++++++---------
+ main.c           | 301 ++++++++++++++++++++++++++++++++++---------------------
+ tests/test.c     | 150 +++++++++++++--------------
+ 7 files changed, 439 insertions(+), 362 deletions(-)
+
+commit c2b7c5a4eea3288c97cc87d94e4586335cfd1422
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Sat May 5 13:15:37 2018 +0200
+
+    correction fonction test déjà présente
+
+ tests/test.c | 75 ++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 37 insertions(+), 38 deletions(-)
+
+commit 14601ebb123b1144c3cbc7b1a19d2a43b7df8a5d
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Sat May 5 11:54:41 2018 +0200
+
+    correction fonction test déjà présente
+
+ tests/test.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+commit 6cf6ca6b5628418519b0cb84204fdf533f9bfd4a
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Fri May 4 13:46:42 2018 +0200
+
+    correction fonction test déjà présente
+
+ tests/test.c | 35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
+
+commit 48db31520ee8351f8d663aa1fa55ecee0f54778e
+Merge: 530c0e8 85f6c86
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 3 14:11:28 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit 530c0e8525087243754004548ba0cf663d27f6ba
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu May 3 14:11:13 2018 +0200
+
+    Bug corrections & getopt()
+
+ main.c | 59 ++++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 34 insertions(+), 25 deletions(-)
+
+commit 85f6c8680950c5d20881c69538cc2d4ae3095791
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Wed May 2 20:24:52 2018 +0200
+
+    get height, get width, get a, get b fonction test
+
+ tests/test.c | 36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+commit 6c949b445cddceb373acf2d1c97391dca4498121
+Merge: af30d33 782213f
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Wed May 2 19:35:55 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit af30d331612fa28160c91626d1efd2af427f162e
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Wed May 2 19:34:29 2018 +0200
+
+    get height, get width, get a, get b fonction test
+
+ test.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+commit 782213f58153362cbb098ab10d5c37058e73efcc
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed May 2 17:21:40 2018 +0200
+
+    Minor structural changes and TODO clarification
+
+ Makefile             | 15 +++++------
+ fractal_test.txt     | 13 ++++++++-
+ libfractal/fractal.c |  6 +++--
+ main.c               | 76 +++++++++++++++++++++++++++++++++-------------------
+ 4 files changed, 72 insertions(+), 38 deletions(-)
+
+commit 47330c16c24139bd47f7b860a12dfb15402ec92e
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Wed May 2 15:43:39 2018 +0200
+
+    Transfer test into /tests
+
+ test.c => tests/test.c | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+commit b4e46f73c51c503e109c69aeceebd28865d76d22
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Wed May 2 12:45:07 2018 +0200
+
+    get name, get value, set value fonction test
+
+ test.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+commit b2a104cbfed88d0310b7fdaafa63dfb92bad9c29
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sun Apr 29 15:44:37 2018 +0200
+
+    Error handeling
+    
+    Prise en charge de tous les traitements d'erreur
+    & complétion de quelques TODO et quelques corrections de bugs
+
+ libfractal/fractal.c |   5 +-
+ libstack/stack.c     |   8 +--
+ main.c               | 140 ++++++++++++++++++++++++++++++++++-----------------
+ 3 files changed, 100 insertions(+), 53 deletions(-)
+
+commit 49346a01a8c8c2bd371f4373786561b45c5c1f16
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sun Apr 29 14:40:54 2018 +0200
+
+    Wroking on threads .2
+    
+    Implémentation des fonctions de threads
+
+ main.c | 87 +++++++++++++++++++++++++++++++++---------------------------------
+ 1 file changed, 44 insertions(+), 43 deletions(-)
+
+commit 5da737ebe6d6c4c2b2f12889bfc3bb5c0f87513e
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sun Apr 29 13:05:56 2018 +0200
+
+    Wroking on threads
+    
+    Implémentation des fonctions de threads
+
+ Makefile             |   1 +
+ fractal_test.txt     |   2 +-
+ libfractal/fractal.c |   2 +-
+ libstack/stack.c     |   4 +-
+ main.c               | 243 +++++++++++++++++++++++++++++++++++++++------------
+ 5 files changed, 193 insertions(+), 59 deletions(-)
+
+commit 5645383e40b13ddc6a06a276069c5e35e60b3415
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sat Apr 28 01:05:55 2018 +0200
+
+    Adding fractal_test.txt
+
+ fractal_test.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+commit 691a51c2f5c5267ac2a1bd85387939d977f5fd0c
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Sat Apr 28 01:05:08 2018 +0200
+
+    Managing end of main & file_reader thread
+    
+    Gestion de la fin de main avec jointure des threads lancés
+    première ébauche de file_reader
+
+ main.c | 114 ++++++++++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 81 insertions(+), 33 deletions(-)
+
+commit cfa30de8265f8a8db9c3479deab1ec10c837a685
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Fri Apr 27 13:03:56 2018 +0200
+
+    Threads jointures and compilation corrections
+
+ Makefile            | 16 ++++-----
+ libfractal/Makefile |  4 +--
+ libstack/Makefile   |  4 +--
+ main.c              | 96 ++++++++++++++++++++++++++++++++++-------------------
+ 4 files changed, 74 insertions(+), 46 deletions(-)
+
+commit 6a60a56e485d73aaf12a415cddd896e40494a887
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu Apr 26 16:39:18 2018 +0200
+
+    Threads initialisations
+    
+    Working on it ...
+
+ main.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 41 insertions(+), 11 deletions(-)
+
+commit acfc18f2e46b0a7ec86e9ddff32375108f53bd33
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu Apr 26 15:36:14 2018 +0200
+
+    Makefile modifications
+    
+    Rectification des makefiles et ajout des descriptions de leurs commandes
+
+ Makefile            | 46 +++++++++++++++++++++++++++++++++-------------
+ libfractal/Makefile |  1 -
+ libstack/Makefile   |  1 -
+ 3 files changed, 33 insertions(+), 15 deletions(-)
+
+commit 261d49fb46d5d2e261de563e20ebfcee58d9b604
+Merge: 4e7dfaa e14773b
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu Apr 26 14:50:17 2018 +0200
+
+    Merge remote-tracking branch 'origin/master'
+
+commit 4e7dfaa55e91e7acf1fd5a47d0323f5cdc2f5840
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Thu Apr 26 14:49:52 2018 +0200
+
+    Small modifications
+
+ Makefile |  1 -
+ main.c   | 27 +++++++++++++++++++--------
+ 2 files changed, 19 insertions(+), 9 deletions(-)
+
+commit e14773b0b450599249ae114848e5b4dc18babf45
+Author: Clothilde de Villenfagne <clothilde.devillenfagne@student.uclouvain.be>
+Date:   Thu Apr 26 10:45:46 2018 +0200
+
+    First GitHub commit from Clion Clothilde
+
+ Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+commit a8386715aed1b3c17732d5a6149d5e5259a8ed10
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Wed Apr 25 13:18:28 2018 +0200
+
+    Clothilde : debug and corrections & Makefile
+    
+    Correction des erreurs et incohérences
+    Création du makefile, devrait maintenant tout pouvoir compiler
+
+ Makefile             | 28 ++++++++++++++++++++++++++--
+ libfractal/Makefile  |  1 +
+ libfractal/fractal.c | 16 ++++++++--------
+ libfractal/fractal.h | 10 +++++-----
+ libstack/Makefile    |  3 ++-
+ libstack/stack.c     |  4 ++--
+ libstack/stack.h     | 15 ++++++++-------
+ main.c               | 43 +++++++++++++++++++++----------------------
+ 8 files changed, 73 insertions(+), 47 deletions(-)
+
+commit 8264650ad06e1a9e03ae2a9c68d8d5e010eb939e
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Mon Apr 23 18:14:02 2018 +0200
+
+    General small adjustments
+    
+    particulièrement dans libfrac : ajout d'une moyenne
+
+ Makefile             | 52 +---------------------------------------------------
+ libfractal/fractal.c | 25 +++++++++++++++++++++++--
+ libfractal/fractal.h | 18 ++++++++++++++++--
+ main.c               |  4 ++++
+ 4 files changed, 44 insertions(+), 55 deletions(-)
+
+commit df277e965e61f4e1baffa907065e3b281d08753e
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Mon Apr 23 13:05:21 2018 +0200
+
+    README Change
+
+ .idea/vcs.xml | 6 ++++++
+ README.md     | 2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+commit 4c0f5ce9913f93ddb8355b9f9e184c1eb8de353f
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Mon Apr 23 13:03:53 2018 +0200
+
+    Update README.md
+
+ README.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 4266807a465700b95c2329310dad06cc88a0bcdd
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Mon Apr 23 13:03:35 2018 +0200
+
+    Update README.md
+
+ README.md | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+commit 3606014c9cc861f31c4de36ab6af79e2ef746df6
+Author: bdevoghel <38432307+bdevoghel@users.noreply.github.com>
+Date:   Mon Apr 23 13:00:41 2018 +0200
+
+    Create README.md
+
+ README.md | 3 +++
+ 1 file changed, 3 insertions(+)
+
+commit c3f281e47efb447c56460981cad30ad81a4a672b
+Author: Brieuc de Voghel <bdev@telenet.be>
+Date:   Mon Apr 23 12:56:37 2018 +0200
+
+    First commit from CLion
+
+ Makefile             |  53 +++++++++++++
+ libfractal/Makefile  |  15 ++++
+ libfractal/fractal.c |  95 +++++++++++++++++++++++
+ libfractal/fractal.h | 131 ++++++++++++++++++++++++++++++++
+ libfractal/tools.c   | 103 +++++++++++++++++++++++++
+ libstack/Makefile    |  15 ++++
+ libstack/stack.c     |  49 ++++++++++++
+ libstack/stack.h     |  49 ++++++++++++
+ main.c               | 208 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 718 insertions(+)
