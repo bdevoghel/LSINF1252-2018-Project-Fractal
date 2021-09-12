@@ -1,4 +1,4 @@
-# fractal_109_deVillenfagne_deVoghel
+# LSINF1252-2018-Project-Fractal
 Code developed for the fractal multhreading project of the LSINF1252 course at the EPL
 
 Academic year 2017-2018
@@ -7,7 +7,7 @@ USE (as example):
 make tests
 make rebuild
 ./main [-d] [--maxthreads 5] - 
-        inputs/lvl0_exemple_énoncé.txt o.bmp
+        inputs/lvl0_exemple_Ã©noncÃ©.txt o.bmp
 
 
 Best way of testing the program is by using the few files found in input/
